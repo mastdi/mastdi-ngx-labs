@@ -69,6 +69,12 @@
         },
         "test": {
           "builder": "@angular/build:unit-test"
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": ["projects/tanita/**/*.ts", "projects/tanita/**/*.html"]
+          }
         }
       }
     },
@@ -94,6 +100,12 @@
           "builder": "@angular/build:unit-test",
           "options": {
             "tsConfig": "projects/shared-core/tsconfig.spec.json"
+          }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": ["projects/shared-core/**/*.ts", "projects/shared-core/**/*.html"]
           }
         }
       }
