@@ -1,0 +1,46 @@
+<div class="info-pane">
+  <div class="brand">
+    <mat-icon class="logo-icon">fitness_center</mat-icon>
+    <h1>Tanita Metrics Engine</h1>
+  </div>
+  <div class="context-content">
+    <h2>Welcome to your decentralized fitness vault.</h2>
+    <p>To pull metrics from your body composition history, we need a secure token connection link.</p>
+    <div class="guide-box">
+      <h3>How to acquire your API access token:</h3>
+      <ol>
+        <li>Log into your primary fitness metrics database account portal.</li>
+        <li>Navigate to <strong>Account Settings &rarr; Developer Tokens</strong>.</li>
+        <li>Generate a new read-scoped token string and copy it.</li>
+      </ol>
+    </div>
+    <p class="privacy-note">
+      <mat-icon>security</mat-icon>
+      Your token is encrypted inside your browser's local storage database and is never sent to an external server.
+    </p>
+  </div>
+</div>
+
+<div class="action-pane">
+  <mat-card class="form-card">
+    <mat-card-header>
+      <mat-card-title>Initialize Secure Vault</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="setupForm" (ngSubmit)="onSaveSetup()">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Developer API Token</mat-label>
+          <input matInput formControlName="apiToken" placeholder="Paste token string..." type="password" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Create Master Workspace Password</mat-label>
+          <input matInput formControlName="masterPassword" placeholder="Minimum 6 characters..." type="password" />
+          <mat-hint>This key unlocks your API configurations on this computer</mat-hint>
+        </mat-form-field>
+        <button mat-raised-button color="primary" type="submit" class="submit-btn" [disabled]="setupForm.invalid">
+          Secure & Complete Setup
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>
