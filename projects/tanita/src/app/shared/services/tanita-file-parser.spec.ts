@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 
 import { TanitaFileParser } from './tanita-file-parser';
-import { firstValueFrom } from 'rxjs';
 
 describe('TanitaFileParser', () => {
   let service: TanitaFileParser;

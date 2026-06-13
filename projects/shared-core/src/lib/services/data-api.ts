@@ -10,11 +10,11 @@ export class DataApi {
   private http = inject(HttpClient);
   private userConfig = inject(UserConfig);
 
-  uploadPayload(payload: any[] | Record<string, any>): Promise<any> {
+  uploadPayload(payload: unknown): Promise<unknown> {
     const targetUrl = this.userConfig.url;
 
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
 
-    return firstValueFrom(this.http.post<any>(targetUrl, payload, { headers }));
+    return firstValueFrom(this.http.post<unknown>(targetUrl, payload, { headers }));
   }
 }

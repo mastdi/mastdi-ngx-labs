@@ -39,8 +39,10 @@ export class UserConfig {
 
   isConfigSet(): boolean {
     try {
+      /* eslint-disable @typescript-eslint/no-unused-expressions */
       this.url;
       this.header;
+      /* eslint-enable @typescript-eslint/no-unused-expressions */
     } catch {
       return false;
     }

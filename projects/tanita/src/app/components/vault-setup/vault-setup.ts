@@ -41,7 +41,7 @@ export class VaultSetup {
 
   onSaveSetup(): void {
     if (this.setupForm.invalid) return;
-    const { url, apiTokenValue, apiTokenKey, masterPassword } = this.setupForm.value;
+    const { url, apiTokenValue, apiTokenKey } = this.setupForm.value;
     if (navigator.serviceWorker && navigator.serviceWorker.controller) {
       // Send the payload straight into the Service Worker thread
       navigator.serviceWorker.controller.postMessage({

@@ -1,11 +1,10 @@
 import { Injectable } from '@angular/core';
-import { Observable, Subject } from 'rxjs';
 import * as Papa from 'papaparse';
 import { v5 as uuidv5 } from 'uuid';
 
 export interface TanitaRecord {
   UUID: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 @Injectable({
@@ -27,6 +26,7 @@ export class TanitaFileParser {
         delimiter: ';', // Explicitly targeting the semicolon delimiter in the data
         complete: (results) => {
           try {
+            /* eslint-disable @typescript-eslint/no-explicit-any */
             const enrichedData: TanitaRecord[] = results.data.map((row: any) => {
               // Create a reliable, repeatable string signature from the row's values
               const rawRowString = Object.values(row).join(';');
@@ -39,7 +39,7 @@ export class TanitaFileParser {
                 UUID: deterministicId,
               } as TanitaRecord;
             });
-
+            /* eslint-enable @typescript-eslint/no-explicit-any */
             resolve(enrichedData);
           } catch (enrichmentError) {
             reject(enrichmentError);
