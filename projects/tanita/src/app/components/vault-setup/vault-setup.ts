@@ -30,7 +30,9 @@ export class VaultSetup {
 
   constructor() {
     this.setupForm = this.fb.group({
-      apiToken: ['', [Validators.required, Validators.minLength(10)]],
+      url: ['', [Validators.required, Validators.pattern(/^https:\/\/.+$/)]],
+      apiTokenKey: ['', [Validators.required]],
+      apiTokenValue: ['', [Validators.required]],
       masterPassword: ['', [Validators.required, Validators.minLength(6)]],
     });
   }
@@ -39,6 +41,7 @@ export class VaultSetup {
     if (this.setupForm.invalid) return;
     const { apiToken } = this.setupForm.value;
     localStorage.setItem('tanita_vault', btoa(apiToken));
+    const { url, apiTokenValue, apiTokenKey, masterPassword } = this.setupForm.value;
     this.setupComplete.emit();
   }
 }
