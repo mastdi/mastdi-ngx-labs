@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { VaultSetup } from './components/vault-setup/vault-setup';
 import { VaultUnlock } from './components/vault-unlock/vault-unlock';
 import { VaultDashboard } from './components/vault-dashboard/vault-dashboard';
-import { UserConfig } from './shared/services/user-config';
+import { UserConfig } from '../../../shared-core/src/lib/services/user-config';
 
 export type WorkspaceState = 'setup' | 'locked' | 'unlocked';
 
