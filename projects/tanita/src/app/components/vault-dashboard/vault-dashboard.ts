@@ -4,6 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { TanitaFileParser } from '../../shared/services/tanita-file-parser';
+import { DataApi } from 'shared-core';
 
 @Component({
   selector: 'app-vault-dashboard',
@@ -13,7 +14,8 @@ import { TanitaFileParser } from '../../shared/services/tanita-file-parser';
   styleUrls: ['./vault-dashboard.scss'],
 })
 export class VaultDashboard {
-  private parserService: TanitaFileParser = inject(TanitaFileParser);
+  private readonly parserService: TanitaFileParser = inject(TanitaFileParser);
+  private readonly dataApi = inject(DataApi);
   vaultLocked = output<void>();
 
   async onFileSelected(event: Event): Promise<void> {
@@ -24,7 +26,7 @@ export class VaultDashboard {
     }
     const records = await this.parserService.parseTanitaCsv(fileList[0]);
 
-    console.log(records);
+    await this.dataApi.uploadPayload(records);
   }
 
   onLockWorkspace(): void {
