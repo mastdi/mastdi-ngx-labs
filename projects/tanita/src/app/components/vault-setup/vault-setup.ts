@@ -39,9 +39,19 @@ export class VaultSetup {
 
   onSaveSetup(): void {
     if (this.setupForm.invalid) return;
-    const { apiToken } = this.setupForm.value;
-    localStorage.setItem('tanita_vault', btoa(apiToken));
     const { url, apiTokenValue, apiTokenKey, masterPassword } = this.setupForm.value;
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      // Send the payload straight into the Service Worker thread
+      navigator.serviceWorker.controller.postMessage({
+        type: 'SET_TOKEN_CONFIG',
+        url,
+        apiTokenKey,
+        apiTokenValue,
+      });
+    } else {
+      console.warn('Service Worker is not ready or active yet.');
+    }
+    localStorage.setItem('tanita_vault', btoa(apiTokenValue));
     this.setupComplete.emit();
   }
 }
