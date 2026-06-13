@@ -1,8 +1,9 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { VaultSetup } from './components/vault-setup/vault-setup';
 import { VaultUnlock } from './components/vault-unlock/vault-unlock';
 import { VaultDashboard } from './components/vault-dashboard/vault-dashboard';
+import { UserConfig } from './shared/services/user-config';
 
 export type WorkspaceState = 'setup' | 'locked' | 'unlocked';
 
@@ -14,6 +15,7 @@ export type WorkspaceState = 'setup' | 'locked' | 'unlocked';
   styleUrls: ['./app.scss'],
 })
 export class App implements OnInit {
+  private readonly userConfig: UserConfig = inject(UserConfig);
   currentStatus = signal<WorkspaceState>('setup');
 
   ngOnInit(): void {
@@ -32,8 +34,7 @@ export class App implements OnInit {
   }
 
   evaluateStorageState(): void {
-    const savedToken = localStorage.getItem('tanita_vault');
-    if (savedToken) {
+    if (this.userConfig.isConfigSet()) {
       this.currentStatus.set('locked');
     } else {
       this.currentStatus.set('setup');

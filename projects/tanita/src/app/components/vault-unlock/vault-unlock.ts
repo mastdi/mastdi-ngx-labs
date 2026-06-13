@@ -6,6 +6,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { UserConfig } from '../../shared/services/user-config';
 
 @Component({
   selector: 'app-vault-unlock',
@@ -24,6 +25,7 @@ import { MatIconModule } from '@angular/material/icon';
 })
 export class VaultUnlock {
   private fb = inject(FormBuilder);
+  private userConfig = inject(UserConfig);
 
   unlockComplete = output<void>();
   storageReset = output<void>();
@@ -41,7 +43,7 @@ export class VaultUnlock {
   }
 
   onWipeStorage(): void {
-    localStorage.removeItem('tanita_vault');
+    this.userConfig.clear();
     this.storageReset.emit();
   }
 }
