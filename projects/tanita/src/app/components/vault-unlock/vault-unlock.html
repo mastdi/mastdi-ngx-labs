@@ -5,8 +5,14 @@
   </div>
   <div class="context-content">
     <h2>Welcome Back.</h2>
-    <p>Your workspace configuration profiles are fully secured locally using AES-256 grade storage protocols.</p>
-    <p>Provide your master authentication key on the right-hand action panel to re-initialize your integration endpoints and decrypt your active keys.</p>
+    <p>
+      Your workspace configuration profiles are fully secured locally using AES-256 grade storage
+      protocols.
+    </p>
+    <p>
+      Provide your master authentication key on the right-hand action panel to re-initialize your
+      integration endpoints and decrypt your active keys.
+    </p>
   </div>
 </div>
 
@@ -19,9 +25,20 @@
       <form [formGroup]="unlockForm" (ngSubmit)="onUnlock()">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Master Password</mat-label>
-          <input matInput formControlName="password" placeholder="Enter key..." type="password" />
+          <input
+            matInput
+            formControlName="masterPassword"
+            placeholder="Enter key..."
+            type="password"
+          />
         </mat-form-field>
-        <button mat-raised-button color="accent" type="submit" class="submit-btn" [disabled]="unlockForm.invalid">
+        <button
+          mat-raised-button
+          color="accent"
+          type="submit"
+          class="submit-btn"
+          [disabled]="unlockForm.invalid"
+        >
           Decrypt Workspace
         </button>
       </form>
