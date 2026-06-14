@@ -6,7 +6,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { UserConfig } from '../../../../../shared-core/src/lib/services/user-config';
+import { UserConfig } from 'shared-core';
+import { SecureStorage } from 'shared-core';
 
 @Component({
   selector: 'app-vault-setup',
@@ -26,6 +27,7 @@ import { UserConfig } from '../../../../../shared-core/src/lib/services/user-con
 export class VaultSetup {
   private fb = inject(FormBuilder);
   private userConfig = inject(UserConfig);
+  private secureStorage = inject(SecureStorage);
 
   setupComplete = output<void>();
   setupForm: FormGroup;
@@ -39,9 +41,9 @@ export class VaultSetup {
     });
   }
 
-  onSaveSetup(): void {
+  async onSaveSetup(): Promise<void> {
     if (this.setupForm.invalid) return;
-    const { url, apiTokenValue, apiTokenKey } = this.setupForm.value;
+    const { url, apiTokenValue, apiTokenKey, masterPassword } = this.setupForm.value;
     if (navigator.serviceWorker && navigator.serviceWorker.controller) {
       // Send the payload straight into the Service Worker thread
       navigator.serviceWorker.controller.postMessage({
@@ -54,8 +56,13 @@ export class VaultSetup {
       console.warn('Service Worker is not ready or active yet.');
     }
     this.userConfig.url = url;
-    // TODO: Encrypt this using the master password, key stretching and AES-256
-    this.userConfig.header = btoa(JSON.stringify({ apiTokenKey: apiTokenValue }));
+    this.userConfig.header = await this.secureStorage.encryptSecret(
+      JSON.stringify({
+        key: apiTokenKey,
+        value: apiTokenValue,
+      }),
+      masterPassword,
+    );
     this.setupComplete.emit();
   }
 }
