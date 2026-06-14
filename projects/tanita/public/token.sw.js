@@ -12,6 +12,9 @@ self.addEventListener('message', (event) => {
       apiTokenValue: event.data.apiTokenValue
     };
     console.log('SW: Token loaded securely into thread memory.');
+  } else if (event.data && event.data.type === 'RESET_TOKEN_CONFIG') {
+    activeCredentials = null;
+    console.log('SW: Token reset config from thread memory.');
   }
 });
 

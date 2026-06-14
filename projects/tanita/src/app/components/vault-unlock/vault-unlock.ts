@@ -42,6 +42,11 @@ export class VaultUnlock {
     if (!this.userConfig.isConfigSet()) {
       this.onWipeStorage();
     }
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'RESET_TOKEN_CONFIG',
+      });
+    }
   }
 
   async onUnlock(): Promise<void> {
@@ -73,6 +78,12 @@ export class VaultUnlock {
   }
 
   onWipeStorage(): void {
+    if (!navigator.serviceWorker || !navigator.serviceWorker.controller) {
+      return;
+    }
+    navigator.serviceWorker.controller.postMessage({
+      type: 'RESET_TOKEN_CONFIG',
+    });
     this.userConfig.clear();
     this.storageReset.emit();
   }
