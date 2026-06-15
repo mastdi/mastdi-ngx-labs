@@ -1,4 +1,4 @@
-import { Component, output, inject } from '@angular/core';
+import { Component, output, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -23,7 +23,7 @@ import { UserConfig, SecureStorage } from 'shared-core';
   templateUrl: './vault-unlock.html',
   styleUrls: ['./vault-unlock.scss'],
 })
-export class VaultUnlock {
+export class VaultUnlock implements OnInit {
   private fb = inject(FormBuilder);
   private readonly userConfig = inject(UserConfig);
   private readonly secureStorage = inject(SecureStorage);
