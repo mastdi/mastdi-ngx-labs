@@ -26,10 +26,17 @@ export class TanitaFileParser {
         delimiter: ';', // Explicitly targeting the semicolon delimiter in the data
         complete: (results) => {
           try {
+            // results.meta.fields is set when header: true is configured
+            const fields = [...(results.meta.fields ?? [])];
+            fields.sort();
+            if (fields.length === 0) {
+              reject(new Error('No fields found in the CSV file.'));
+              return;
+            }
             /* eslint-disable @typescript-eslint/no-explicit-any */
             const enrichedData: TanitaRecord[] = results.data.map((row: any) => {
               // Create a reliable, repeatable string signature from the row's values
-              const rawRowString = Object.values(row).join(';');
+              const rawRowString = fields.map((field) => row[field as keyof typeof row]).join(';');
 
               // Generate the deterministic UUID v5 based on the unique row string
               const deterministicId = uuidv5(rawRowString, this.UUID_NAMESPACE);

@@ -43,7 +43,7 @@ describe('TanitaFileParser', () => {
 
   it('should generate the exact same UUID for identical CSV rows (deterministic behavior)', async () => {
     const csvContent1 = 'MACHINE;ID;STATUS;MDATE\nDC-360;1;0;08-05-2026';
-    const csvContent2 = 'MACHINE;ID;STATUS;MDATE\nDC-360;1;0;08-05-2026';
+    const csvContent2 = 'MACHINE;ID;MDATE;STATUS\nDC-360;1;08-05-2026;0';
 
     const file1 = new File([csvContent1], 'file1.csv', { type: 'text/csv' });
     const file2 = new File([csvContent2], 'file2.csv', { type: 'text/csv' });
