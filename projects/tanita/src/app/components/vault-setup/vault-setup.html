@@ -30,43 +30,102 @@
       <mat-card-title>Initialize Secure Vault</mat-card-title>
     </mat-card-header>
     <mat-card-content>
-      <form [formGroup]="setupForm" (ngSubmit)="onSaveSetup()">
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>URL</mat-label>
-          <input matInput formControlName="url" placeholder="Paste url, https://api.example.org" />
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Token Header</mat-label>
-          <input matInput formControlName="apiTokenKey" placeholder="Paste header, X-Token" />
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Developer API Token</mat-label>
-          <input
-            matInput
-            formControlName="apiTokenValue"
-            placeholder="Paste token"
-            type="password"
-          />
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Create Master Workspace Password</mat-label>
-          <input
-            matInput
-            formControlName="masterPassword"
-            placeholder="Minimum 6 characters..."
-            type="password"
-          />
-          <mat-hint>This key unlocks your API configurations on this computer</mat-hint>
-        </mat-form-field>
-        <button
-          mat-raised-button
-          color="primary"
-          type="submit"
-          class="submit-btn"
-          [disabled]="setupForm.invalid"
-        >
-          Secure & Complete Setup
-        </button>
+      <form [formGroup]="setupForm" (ngSubmit)="$event.preventDefault()">
+        <mat-stepper linear #stepper>
+          <mat-step
+            [stepControl]="integrationStepGroup"
+            errorMessage="Connection settings are invalid."
+          >
+            <ng-template matStepLabel>API Connection</ng-template>
+
+            <div class="step-content-pane" formGroupName="integrationStep">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>URL</mat-label>
+                <input
+                  matInput
+                  formControlName="url"
+                  placeholder="Paste url, https://api.example.org"
+                  required
+                />
+                @if (integrationStepGroup.controls.url.hasError('pattern')) {
+                  <mat-error>Must be a secure endpoint (starting with https://)</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Token Header</mat-label>
+                <input
+                  matInput
+                  formControlName="apiTokenKey"
+                  placeholder="Paste header, X-Token"
+                  required
+                />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Developer API Token</mat-label>
+                <input
+                  matInput
+                  formControlName="apiTokenValue"
+                  placeholder="Paste token"
+                  type="password"
+                  required
+                />
+              </mat-form-field>
+            </div>
+
+            <div class="step-actions">
+              <button
+                mat-raised-button
+                color="primary"
+                matStepperNext
+                type="button"
+                [disabled]="integrationStepGroup.invalid"
+              >
+                Next Step
+              </button>
+            </div>
+          </mat-step>
+
+          <mat-step
+            [stepControl]="passwordStepGroup"
+            errorMessage="Password constraints not satisfied."
+          >
+            <ng-template matStepLabel>Security Key</ng-template>
+
+            <div class="step-content-pane" formGroupName="passwordStep">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Create Master Workspace Password</mat-label>
+                <input
+                  matInput
+                  formControlName="masterPassword"
+                  placeholder="Minimum 6 characters..."
+                  type="password"
+                  (keydown.enter)="passwordStepGroup.valid && onSaveSetup()"
+                  required
+                />
+                <mat-hint>This key unlocks your API configurations on this computer</mat-hint>
+                @if (passwordStepGroup.controls.masterPassword.hasError('minlength')) {
+                  <mat-error>Password must be at least 6 characters</mat-error>
+                }
+              </mat-form-field>
+            </div>
+
+            <div class="step-actions">
+              <button mat-button matStepperPrevious type="button">Back</button>
+              <button
+                mat-raised-button
+                color="primary"
+                type="button"
+                class="submit-btn"
+                [disabled]="setupForm.invalid"
+                (click)="onSaveSetup()"
+              >
+                Secure & Complete Setup
+              </button>
+            </div>
+          </mat-step>
+        </mat-stepper>
       </form>
     </mat-card-content>
   </mat-card>
