@@ -1,9 +1,11 @@
 import { Injectable } from '@angular/core';
 import * as Papa from 'papaparse';
 import { v5 as uuidv5 } from 'uuid';
+import { parseTanitaDate } from './tanita-date';
 
 export interface TanitaRecord {
-  UUID: string;
+  MASTDI_ID: string;
+  MASTDI_MEASURED_AT: string | null;
   [key: string]: unknown;
 }
 
@@ -41,9 +43,12 @@ export class TanitaFileParser {
               // Generate the deterministic UUID v5 based on the unique row string
               const deterministicId = uuidv5(rawRowString, this.UUID_NAMESPACE);
 
+              const measurementDateTime = parseTanitaDate(row['MDATE'], row['MTIME']);
+
               return {
                 ...row,
-                UUID: deterministicId,
+                MASTDI_ID: deterministicId,
+                MASTDI_MEASURED_AT: measurementDateTime?.toISOString() ?? null,
               } as TanitaRecord;
             });
             /* eslint-enable @typescript-eslint/no-explicit-any */

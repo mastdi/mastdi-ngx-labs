@@ -36,9 +36,9 @@ describe('TanitaFileParser', () => {
     expect(records[1]['ID']).toBe('2');
     expect(records[1]['WEIGHT kg']).toBe('80.4');
 
-    expect(records[0].UUID).toBeDefined();
-    expect(typeof records[0].UUID).toBe('string');
-    expect(records[0].UUID.length).toBe(36);
+    expect(records[0].MASTDI_ID).toBeDefined();
+    expect(typeof records[0].MASTDI_ID).toBe('string');
+    expect(records[0].MASTDI_ID.length).toBe(36);
   });
 
   it('should generate the exact same UUID for identical CSV rows (deterministic behavior)', async () => {
@@ -52,7 +52,7 @@ describe('TanitaFileParser', () => {
     const records1 = await service.parseTanitaCsv(file1);
     const records2 = await service.parseTanitaCsv(file2);
 
-    expect(records1[0].UUID).toEqual(records2[0].UUID);
+    expect(records1[0].MASTDI_ID).toEqual(records2[0].MASTDI_ID);
   });
 
   it('should generate different UUIDs for rows that have different values', async () => {
@@ -65,7 +65,7 @@ describe('TanitaFileParser', () => {
 
     const records = await service.parseTanitaCsv(mockFile);
 
-    expect(records[0].UUID).not.toEqual(records[1].UUID);
+    expect(records[0].MASTDI_ID).not.toEqual(records[1].MASTDI_ID);
   });
 
   it('should safely skip empty trailing lines without breaking or generating blank records', async () => {
