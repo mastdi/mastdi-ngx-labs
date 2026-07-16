@@ -17,9 +17,9 @@ describe('TanitaFileParser', () => {
   it('should correctly parse a valid semicolon-delimited CSV and append UUIDs', async () => {
     // 1. Create mock CSV data simulating your file structure
     const csvContent =
-      'MACHINE;ID;STATUS;MDATE;MTIME;WEIGHT kg\n' +
-      'DC-360;1;0;08-05-2026;13:50:16;75.2\n' +
-      'DC-360;2;0;08-05-2026;13:56:12;80.4';
+      'MACHINE,ID,STATUS,MDATE,MTIME,WEIGHT kg\n' +
+      'DC-360,1,0,08-05-2026,13:50:16,75.2\n' +
+      'DC-360,2,0,08-05-2026,13:56:12,80.4';
 
     const mockFile = new File([csvContent], 'TANITA_TEST.CSV', { type: 'text/csv' });
 
@@ -42,8 +42,8 @@ describe('TanitaFileParser', () => {
   });
 
   it('should generate the exact same UUID for identical CSV rows (deterministic behavior)', async () => {
-    const csvContent1 = 'MACHINE;ID;STATUS;MDATE\nDC-360;1;0;08-05-2026';
-    const csvContent2 = 'MACHINE;ID;MDATE;STATUS\nDC-360;1;08-05-2026;0';
+    const csvContent1 = 'MACHINE,ID,STATUS,MDATE\nDC-360,1,0,08-05-2026';
+    const csvContent2 = 'MACHINE,ID,MDATE,STATUS\nDC-360,1,08-05-2026,0';
 
     const file1 = new File([csvContent1], 'file1.csv', { type: 'text/csv' });
     const file2 = new File([csvContent2], 'file2.csv', { type: 'text/csv' });
@@ -57,9 +57,9 @@ describe('TanitaFileParser', () => {
 
   it('should generate different UUIDs for rows that have different values', async () => {
     const csvContent =
-      'MACHINE;ID;STATUS;MDATE;WEIGHT kg\n' +
-      'DC-360;1;0;08-05-2026;75.2\n' +
-      'DC-360;1;0;08-05-2026;75.3';
+      'MACHINE,ID,STATUS,MDATE,WEIGHT kg\n' +
+      'DC-360,1,0,08-05-2026,75.2\n' +
+      'DC-360,1,0,08-05-2026,75.3';
 
     const mockFile = new File([csvContent], 'diff_test.csv', { type: 'text/csv' });
 
@@ -69,7 +69,7 @@ describe('TanitaFileParser', () => {
   });
 
   it('should safely skip empty trailing lines without breaking or generating blank records', async () => {
-    const csvWithEmptyLines = 'MACHINE;ID;STATUS\n' + 'DC-360;1;0\n' + '\n' + '\n';
+    const csvWithEmptyLines = 'MACHINE,ID,STATUS\n' + 'DC-360,1,0\n' + '\n' + '\n';
 
     const mockFile = new File([csvWithEmptyLines], 'empty_lines.csv', { type: 'text/csv' });
 

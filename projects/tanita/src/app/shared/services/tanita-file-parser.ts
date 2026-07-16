@@ -23,7 +23,7 @@ export class TanitaFileParser {
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
-        delimiter: ';', // Explicitly targeting the semicolon delimiter in the data
+        delimiter: ',', // Explicitly targeting the comma delimiter in the data
         complete: (results) => {
           try {
             // results.meta.fields is set when header: true is configured
