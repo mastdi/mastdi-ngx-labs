@@ -6,7 +6,11 @@
   <div class="context-content">
     <h2>Ready for Synchronization.</h2>
     <p>Your secure data vault is completely decrypted and active.</p>
-    <p>Export your fresh weight scale metrics matrix sheet directly from your Tanita physical smart-scale app as a <strong>Standard CSV format data log file</strong>, then feed it into the execution node on the right.</p>
+    <p>
+      Export your fresh weight scale metrics matrix sheet directly from your Tanita physical
+      smart-scale app as a <strong>Standard CSV format data log file</strong>, then feed it into the
+      execution node on the right.
+    </p>
   </div>
 </div>
 
@@ -15,17 +19,55 @@
     <mat-card-header>
       <mat-card-title>Ingest Tanita Matrix CSV</mat-card-title>
     </mat-card-header>
-    <mat-card-content class="dropzone-area">
-      <mat-icon class="upload-icon">cloud_upload</mat-icon>
-      <p>Drag your export sheet here or click below</p>
 
-      <input type="file" id="csvFile" accept=".csv" (change)="onFileSelected($event)" class="hidden-input" />
-      <label for="csvFile" mat-raised-button color="primary" class="upload-label-btn">
-        Select CSV File
-      </label>
+    <mat-card-content class="dropzone-area">
+      @if (status() === 'loading') {
+        <mat-spinner diameter="48" class="loading-spinner"></mat-spinner>
+        <p>Processing and synchronizing metrics vault...</p>
+      } @else if (status() === 'success') {
+        <mat-icon class="upload-icon success-icon">check_circle</mat-icon>
+        <p class="success-text">Successfully synchronized!</p>
+        <p>
+          <strong>{{ uploadedRowsCount() }}</strong> metrics uploaded.
+        </p>
+
+        <button mat-stroked-button color="primary" class="reset-btn" (click)="onReset()">
+          Upload Another File
+        </button>
+      } @else {
+        <mat-icon class="upload-icon">cloud_upload</mat-icon>
+        <p>Drag your export sheet here or click below</p>
+
+        <input
+          type="file"
+          #fileInput
+          accept=".csv"
+          (change)="onFileSelected($event)"
+          class="hidden-input"
+          style="display: none"
+        />
+
+        <button
+          mat-raised-button
+          color="primary"
+          type="button"
+          class="upload-label-btn"
+          (click)="fileInput.click()"
+        >
+          Select CSV File
+        </button>
+      }
     </mat-card-content>
+
     <mat-card-actions class="card-footer">
-      <button mat-button color="warn" (click)="onLockWorkspace()">Lock Vault</button>
+      <button
+        mat-button
+        color="warn"
+        [disabled]="status() === 'loading'"
+        (click)="onLockWorkspace()"
+      >
+        Lock Vault
+      </button>
     </mat-card-actions>
   </mat-card>
 </div>
