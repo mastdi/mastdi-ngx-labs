@@ -7,6 +7,7 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import {
   TARGET_IDS,
@@ -18,7 +19,7 @@ import { formatDuration } from '../../engine/maze-io';
 
 @Component({
   selector: 'app-maze-run-panel',
-  imports: [MatCardModule],
+  imports: [MatButtonModule, MatCardModule],
   templateUrl: './maze-run-panel.html',
   styleUrl: './maze-run-panel.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,10 +38,17 @@ export class MazeRunPanel implements OnInit, OnDestroy {
 
   readonly hitIds = computed(() => this.engine().hitTargetIds());
   readonly rejection = computed(() => this.engine().rejected());
+  readonly isRunning = computed(() => this.engine().status() === 'running');
+  readonly isDone = computed(() => this.engine().isDone());
+  readonly gaveUp = computed(() => this.engine().status() === 'given-up');
   readonly elapsedDisplay = computed(() => {
     this.tick();
     return formatDuration(this.engine().elapsedMs());
   });
+
+  giveUp(): void {
+    this.engine().giveUp();
+  }
 
   ngOnInit(): void {
     this.tickTimer = setInterval(() => this.tick.update((t) => t + 1), 50);

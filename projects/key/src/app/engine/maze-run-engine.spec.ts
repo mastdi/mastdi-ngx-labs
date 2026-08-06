@@ -113,4 +113,54 @@ describe('MazeRunEngine', () => {
       expect(() => new MazeRunEngine({ mode: 'last-only' })).toThrow();
     });
   });
+
+  describe('giving up', () => {
+    it('freezes the clock and keeps partial hits when abandoned mid-run', () => {
+      const engine = new MazeRunEngine({ mode: 'any-order' }, fakeClock(100));
+      engine.start();
+      engine.registerHit(0);
+      engine.registerHit(2);
+
+      engine.giveUp();
+
+      expect(engine.status()).toBe('given-up');
+      expect(engine.isDone()).toBe(true);
+      expect(engine.isFinished()).toBe(false);
+      expect(engine.hits().map((h) => h.targetId)).toEqual([0, 2]);
+      expect(engine.totalMs()).toBe(300);
+      expect(engine.elapsedMs(99999)).toBe(300); // clock stays frozen afterwards
+    });
+
+    it('is a no-op if called before a run starts or after it already ended', () => {
+      const engine = new MazeRunEngine({ mode: 'any-order' }, fakeClock());
+      engine.giveUp();
+      expect(engine.status()).toBe('idle');
+
+      engine.start();
+      engine.registerHit(0);
+      engine.registerHit(1);
+      engine.registerHit(2);
+      engine.registerHit(3);
+      expect(engine.status()).toBe('finished');
+
+      engine.giveUp();
+      expect(engine.status()).toBe('finished'); // already finished, giveUp doesn't override
+    });
+
+    it('clears any pending rejection toast when abandoned', () => {
+      vi.useFakeTimers();
+      const engine = new MazeRunEngine(
+        { mode: 'sequence', sequence: [0, 1, 2, 3] },
+        fakeClock(),
+        1500,
+      );
+      engine.start();
+      engine.registerHit(3); // rejected, not the expected first target
+      expect(engine.rejected()).not.toBeNull();
+
+      engine.giveUp();
+      expect(engine.rejected()).toBeNull();
+      vi.useRealTimers();
+    });
+  });
 });

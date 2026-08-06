@@ -35,7 +35,7 @@ export interface RejectedHit {
   message: string;
 }
 
-export type MazeRunStatus = 'idle' | 'counting-down' | 'running' | 'finished';
+export type MazeRunStatus = 'idle' | 'counting-down' | 'running' | 'finished' | 'given-up';
 
 export function validateMazeConfig(config: MazeConfig): string | null {
   if (config.mode === 'sequence') {
@@ -66,6 +66,12 @@ export class MazeRunEngine {
 
   readonly hitTargetIds = computed(() => new Set(this.hits().map((h) => h.targetId)));
   readonly isFinished = computed(() => this.status() === 'finished');
+
+  /** True once a run has ended for any reason (completed or abandoned) — used to gate result display. */
+  readonly isDone = computed(() => {
+    const status = this.status();
+    return status === 'finished' || status === 'given-up';
+  });
 
   private startedAtMs: number | null = null;
   private rejectionTimer: ReturnType<typeof setTimeout> | null = null;
@@ -99,10 +105,10 @@ export class MazeRunEngine {
     this.startedAtMs = null;
   }
 
-  /** Elapsed time for display while running, or the final total once finished. */
+  /** Elapsed time for display while running, or the final total once the run has ended. */
   elapsedMs(nowMs: number = this.now()): number {
     if (this.startedAtMs === null) return 0;
-    if (this.status() === 'finished' && this.totalMs() !== null) return this.totalMs()!;
+    if (this.isDone() && this.totalMs() !== null) return this.totalMs()!;
     return nowMs - this.startedAtMs;
   }
 
@@ -127,6 +133,16 @@ export class MazeRunEngine {
       this.status.set('finished');
       this.totalMs.set(atMs - this.startedAtMs);
     }
+  }
+
+  /** Abandon an in-progress run, freezing the clock and keeping whatever splits were already captured. */
+  giveUp(): void {
+    if (this.status() !== 'running' || this.startedAtMs === null) return;
+    this.clearRejectionTimer();
+    const atMs = this.now();
+    this.totalMs.set(atMs - this.startedAtMs);
+    this.rejected.set(null);
+    this.status.set('given-up');
   }
 
   private checkValidity(targetId: TargetId): { valid: true } | { valid: false; message: string } {

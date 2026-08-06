@@ -70,8 +70,8 @@ export class App {
   }
 
   allFinished(): boolean {
-    const primaryDone = this.primaryEngine?.isFinished() ?? true;
-    const secondaryDone = this.secondaryEngine?.isFinished() ?? true;
+    const primaryDone = this.primaryEngine?.isDone() ?? true;
+    const secondaryDone = this.secondaryEngine?.isDone() ?? true;
     return primaryDone && secondaryDone;
   }
 

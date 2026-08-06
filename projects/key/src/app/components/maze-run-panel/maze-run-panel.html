@@ -18,7 +18,13 @@
       <div class="toast" role="status">{{ r.message }}</div>
     }
 
-    @if (engine().isFinished()) {
+    @if (isRunning()) {
+      <button mat-stroked-button color="warn" type="button" class="give-up" (click)="giveUp()">
+        Give up
+      </button>
+    }
+
+    @if (isDone()) {
       <table class="splits">
         <thead>
           <tr>
@@ -34,7 +40,7 @@
             </tr>
           }
           <tr class="total">
-            <td>Total</td>
+            <td>{{ gaveUp() ? 'Gave up at' : 'Total' }}</td>
             <td>{{ formatDuration(engine().totalMs() ?? 0) }}</td>
           </tr>
         </tbody>
