@@ -33,6 +33,12 @@
       "path": "./projects/tanita/tsconfig.spec.json"
     },
     {
+      "path": "./projects/key/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/key/tsconfig.spec.json"
+    },
+    {
       "path": "./projects/shared-core/tsconfig.lib.json"
     },
     {

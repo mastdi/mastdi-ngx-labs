@@ -1,0 +1,33 @@
+<div class="page">
+  @switch (phase()) {
+    @case ('config') {
+      <app-maze-config-form (configured)="onConfigured($event)" />
+    }
+    @case ('ready') {
+      <div class="ready">
+        <p>Robots in position at their starting target. Press start when ready.</p>
+        <button mat-flat-button color="primary" (click)="beginCountdown()">Start</button>
+        <button mat-button (click)="resetToConfig()">Back to setup</button>
+      </div>
+    }
+    @case ('run') {
+      <div class="run-layout">
+        @if (countdownValue(); as count) {
+          <div class="countdown">{{ count }}</div>
+        } @else {
+          <div class="panels">
+            @if (primaryEngine) {
+              <app-maze-run-panel [engine]="primaryEngine" label="Maze 1 (arrows)" />
+            }
+            @if (secondaryEngine) {
+              <app-maze-run-panel [engine]="secondaryEngine" label="Maze 2 (WASD)" />
+            }
+          </div>
+          @if (allFinished()) {
+            <button mat-button (click)="resetToConfig()">Run again / change setup</button>
+          }
+        }
+      </div>
+    }
+  }
+</div>

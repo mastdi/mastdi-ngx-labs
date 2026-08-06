@@ -1,0 +1,61 @@
+<mat-card class="config-card">
+  <mat-card-header>
+    <mat-card-title>Maze setup</mat-card-title>
+  </mat-card-header>
+
+  <mat-card-content>
+    <form [formGroup]="configForm" (ngSubmit)="submit()">
+      <mat-form-field appearance="outline">
+        <mat-label>Hit-order rule</mat-label>
+        <mat-select formControlName="mode">
+          <mat-option value="any-order">Any order</mat-option>
+          <mat-option value="sequence">Fixed sequence</mat-option>
+          <mat-option value="last-only">Hit this one last</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      @if (isSequenceMode()) {
+        <div class="sequence-builder" formGroupName="sequence">
+          <p>Order to hit the targets in:</p>
+          @for (position of sequencePositions; track position) {
+            <mat-form-field appearance="outline">
+              <mat-label>Position {{ position + 1 }}</mat-label>
+              <mat-select [formControlName]="'position' + position">
+                @for (id of targetIds; track id) {
+                  <mat-option [value]="id">{{ targetLabels[id] }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+          @if (sequenceHasDuplicates()) {
+            <p class="error" role="alert">Each target must appear exactly once.</p>
+          }
+        </div>
+      }
+
+      @if (isLastOnlyMode()) {
+        <mat-form-field appearance="outline">
+          <mat-label>Target to hit last</mat-label>
+          <mat-select formControlName="lastTargetId">
+            @for (id of targetIds; track id) {
+              <mat-option [value]="id">{{ targetLabels[id] }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
+      <mat-slide-toggle formControlName="dualMaze">
+        Two robots at once (arrows + WASD)
+      </mat-slide-toggle>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Countdown (seconds)</mat-label>
+        <input matInput type="number" min="0" max="10" formControlName="countdownSeconds" />
+      </mat-form-field>
+
+      <button mat-flat-button color="primary" type="submit" [disabled]="!canSubmit()">
+        Continue to start
+      </button>
+    </form>
+  </mat-card-content>
+</mat-card>

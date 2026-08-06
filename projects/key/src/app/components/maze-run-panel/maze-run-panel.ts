@@ -1,0 +1,47 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  OnDestroy,
+  OnInit,
+  signal,
+} from '@angular/core';
+import { MatCardModule } from '@angular/material/card';
+import { TARGET_IDS, TARGET_LABELS, type MazeRunEngine } from '../../engine/maze-run-engine';
+import { formatDuration } from '../../engine/maze-io';
+
+@Component({
+  selector: 'app-maze-run-panel',
+  imports: [MatCardModule],
+  templateUrl: './maze-run-panel.html',
+  styleUrl: './maze-run-panel.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class MazeRunPanel implements OnInit, OnDestroy {
+  readonly engine = input.required<MazeRunEngine>();
+  readonly label = input('Maze');
+
+  readonly targetIds = TARGET_IDS;
+  readonly targetLabels = TARGET_LABELS;
+  readonly formatDuration = formatDuration;
+
+  /** Forces the elapsed-time display to re-read the engine's clock while a run is live. */
+  private readonly tick = signal(0);
+  private tickTimer: ReturnType<typeof setInterval> | null = null;
+
+  readonly hitIds = computed(() => this.engine().hitTargetIds());
+  readonly rejection = computed(() => this.engine().rejected());
+  readonly elapsedDisplay = computed(() => {
+    this.tick();
+    return formatDuration(this.engine().elapsedMs());
+  });
+
+  ngOnInit(): void {
+    this.tickTimer = setInterval(() => this.tick.update((t) => t + 1), 50);
+  }
+
+  ngOnDestroy(): void {
+    if (this.tickTimer) clearInterval(this.tickTimer);
+  }
+}

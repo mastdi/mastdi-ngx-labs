@@ -1,0 +1,57 @@
+.run-panel {
+  min-width: 16rem;
+}
+
+.targets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.target {
+  text-align: center;
+  padding: 0.5rem;
+  border: 2px solid var(--mat-sys-outline-variant, #ccc);
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.target.hit {
+  border-color: var(--mat-sys-primary, #2e7d32);
+  background: var(--mat-sys-primary-container, #e8f5e9);
+  font-weight: 600;
+}
+
+.elapsed {
+  font-variant-numeric: tabular-nums;
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin-top: 0.75rem;
+}
+
+.toast {
+  background: #fff3e0;
+  color: #7a4a00;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+table.splits {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+}
+
+table.splits td,
+table.splits th {
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
+
+table.splits tr.total {
+  font-weight: 700;
+  border-top: 1px solid var(--mat-sys-outline-variant, #ccc);
+}

@@ -1,0 +1,44 @@
+<mat-card class="run-panel">
+  <mat-card-header>
+    <mat-card-title>{{ label() }}</mat-card-title>
+  </mat-card-header>
+
+  <mat-card-content>
+    <div class="targets">
+      @for (id of targetIds; track id) {
+        <div class="target" [class.hit]="hitIds().has(id)">
+          {{ targetLabels[id] }}
+        </div>
+      }
+    </div>
+
+    <div class="elapsed">{{ elapsedDisplay() }}</div>
+
+    @if (rejection(); as r) {
+      <div class="toast" role="status">{{ r.message }}</div>
+    }
+
+    @if (engine().isFinished()) {
+      <table class="splits">
+        <thead>
+          <tr>
+            <th>Target</th>
+            <th>Split</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (hit of engine().hits(); track hit.targetId) {
+            <tr>
+              <td>{{ targetLabels[hit.targetId] }}</td>
+              <td>{{ formatDuration(hit.splitMs) }}</td>
+            </tr>
+          }
+          <tr class="total">
+            <td>Total</td>
+            <td>{{ formatDuration(engine().totalMs() ?? 0) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    }
+  </mat-card-content>
+</mat-card>

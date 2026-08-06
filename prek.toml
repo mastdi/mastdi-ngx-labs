@@ -1,5 +1,6 @@
 [[repos]]
 repo = "local"
 hooks = [
-    { id = "lint-staged", name = "Lint and Format Staged Files", entry = "npx lint-staged", language = "system", files = "\\.(ts|html|scss)$" }
+  { id = "prettier", name = "Prettier", entry = "npx prettier --write", language = "system", files = "\\.(ts|html|scss|json|md)$" },
+  { id = "eslint", name = "ESLint", entry = "npx eslint --fix", language = "system", files = "\\.ts$" }
 ]
