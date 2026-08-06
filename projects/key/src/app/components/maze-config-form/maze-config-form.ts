@@ -19,6 +19,7 @@ export interface MazeSetup {
   config: MazeConfig;
   dualMaze: boolean;
   countdownSeconds: number;
+  labels: Record<TargetId, string>;
 }
 
 @Component({
@@ -40,8 +41,15 @@ export class MazeConfigForm {
   private readonly fb = inject(NonNullableFormBuilder);
 
   readonly targetIds = TARGET_IDS;
-  readonly targetLabels = TARGET_LABELS;
   readonly sequencePositions = [0, 1, 2, 3] as const;
+
+  /** Physical-key hints shown alongside the name field, since the id alone is meaningless. */
+  readonly keyHints: Record<TargetId, string> = {
+    0: 'Arrow ↑ / W',
+    1: 'Arrow → / D',
+    2: 'Arrow ↓ / S',
+    3: 'Arrow ← / A',
+  };
 
   readonly configured = output<MazeSetup>();
 
@@ -58,7 +66,24 @@ export class MazeConfigForm {
       position3: this.fb.control<TargetId>(3),
     }),
     lastTargetId: this.fb.control<TargetId>(3),
+    labels: this.fb.group({
+      target0: this.fb.control(TARGET_LABELS[0], {
+        validators: [Validators.required, Validators.maxLength(24)],
+      }),
+      target1: this.fb.control(TARGET_LABELS[1], {
+        validators: [Validators.required, Validators.maxLength(24)],
+      }),
+      target2: this.fb.control(TARGET_LABELS[2], {
+        validators: [Validators.required, Validators.maxLength(24)],
+      }),
+      target3: this.fb.control(TARGET_LABELS[3], {
+        validators: [Validators.required, Validators.maxLength(24)],
+      }),
+    }),
   });
+
+  // Read labels back out with the same 'target' + id key convention used above.
+  private readonly labelKey = (id: TargetId) => `target${id}` as const;
 
   private readonly mode = toSignal(this.configForm.controls.mode.valueChanges, {
     initialValue: this.configForm.controls.mode.value,
@@ -66,6 +91,10 @@ export class MazeConfigForm {
 
   private readonly sequenceValue = toSignal(this.configForm.controls.sequence.valueChanges, {
     initialValue: this.configForm.controls.sequence.getRawValue(),
+  });
+
+  private readonly labelsStatus = toSignal(this.configForm.controls.labels.statusChanges, {
+    initialValue: this.configForm.controls.labels.status,
   });
 
   readonly isSequenceMode = computed(() => this.mode() === 'sequence');
@@ -77,7 +106,20 @@ export class MazeConfigForm {
     return new Set(ids).size !== 4;
   });
 
-  readonly canSubmit = computed(() => !this.isSequenceMode() || !this.sequenceHasDuplicates());
+  readonly labelsInvalid = computed(() => this.labelsStatus() === 'INVALID');
+
+  readonly canSubmit = computed(
+    () => (!this.isSequenceMode() || !this.sequenceHasDuplicates()) && !this.labelsInvalid(),
+  );
+
+  /** Live labels, used to render target names in the sequence/last-only pickers below. */
+  readonly currentLabels = toSignal(this.configForm.controls.labels.valueChanges, {
+    initialValue: this.configForm.controls.labels.getRawValue(),
+  });
+
+  labelFor(id: TargetId): string {
+    return this.currentLabels()[this.labelKey(id)] || TARGET_LABELS[id];
+  }
 
   submit(): void {
     if (this.configForm.invalid || !this.canSubmit()) return;
@@ -98,10 +140,18 @@ export class MazeConfigForm {
           ? { mode: 'last-only', lastTargetId: raw.lastTargetId }
           : { mode: 'any-order' };
 
+    const labels: Record<TargetId, string> = {
+      0: raw.labels.target0.trim(),
+      1: raw.labels.target1.trim(),
+      2: raw.labels.target2.trim(),
+      3: raw.labels.target3.trim(),
+    };
+
     this.configured.emit({
       config,
       dualMaze: raw.dualMaze,
       countdownSeconds: raw.countdownSeconds,
+      labels,
     });
   }
 }

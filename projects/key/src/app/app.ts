@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MazeConfigForm, type MazeSetup } from './components/maze-config-form/maze-config-form';
 import { MazeRunPanel } from './components/maze-run-panel/maze-run-panel';
-import { MazeRunEngine } from './engine/maze-run-engine';
+import { MazeRunEngine, TARGET_LABELS, type TargetId } from './engine/maze-run-engine';
 import { ARROW_KEY_MAP, WASD_KEY_MAP } from './engine/maze-io';
 
 type Phase = 'config' | 'ready' | 'run';
@@ -20,6 +20,7 @@ type Phase = 'config' | 'ready' | 'run';
 export class App {
   readonly phase = signal<Phase>('config');
   readonly countdownValue = signal<number | null>(null);
+  readonly targetLabels = signal<Record<TargetId, string>>(TARGET_LABELS);
 
   primaryEngine: MazeRunEngine | null = null;
   secondaryEngine: MazeRunEngine | null = null;
@@ -31,6 +32,7 @@ export class App {
     this.primaryEngine = new MazeRunEngine(setup.config);
     this.secondaryEngine = setup.dualMaze ? new MazeRunEngine(setup.config) : null;
     this.countdownSeconds = setup.countdownSeconds;
+    this.targetLabels.set(setup.labels);
     this.phase.set('ready');
   }
 

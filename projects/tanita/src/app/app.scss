@@ -2,12 +2,14 @@
   display: flex;
   min-height: 100vh;
   width: 100vw;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
   overflow-x: hidden;
 }
 
 // Global host structural overrides for child sub-components
-app-vault-setup, app-vault-unlock, app-vault-dashboard {
+app-vault-setup,
+app-vault-unlock,
+app-vault-dashboard {
   display: flex;
   width: 100%;
   min-height: 100vh;

@@ -8,7 +8,12 @@ import {
   signal,
 } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
-import { TARGET_IDS, TARGET_LABELS, type MazeRunEngine } from '../../engine/maze-run-engine';
+import {
+  TARGET_IDS,
+  TARGET_LABELS,
+  type MazeRunEngine,
+  type TargetId,
+} from '../../engine/maze-run-engine';
 import { formatDuration } from '../../engine/maze-io';
 
 @Component({
@@ -21,12 +26,12 @@ import { formatDuration } from '../../engine/maze-io';
 export class MazeRunPanel implements OnInit, OnDestroy {
   readonly engine = input.required<MazeRunEngine>();
   readonly label = input('Maze');
+  /** Falls back to the compass defaults so existing callers/specs keep working unchanged. */
+  readonly targetLabels = input<Record<TargetId, string>>(TARGET_LABELS);
 
   readonly targetIds = TARGET_IDS;
-  readonly targetLabels = TARGET_LABELS;
   readonly formatDuration = formatDuration;
 
-  /** Forces the elapsed-time display to re-read the engine's clock while a run is live. */
   private readonly tick = signal(0);
   private tickTimer: ReturnType<typeof setInterval> | null = null;
 

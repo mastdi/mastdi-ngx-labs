@@ -7,7 +7,7 @@
     <div class="targets">
       @for (id of targetIds; track id) {
         <div class="target" [class.hit]="hitIds().has(id)">
-          {{ targetLabels[id] }}
+          {{ targetLabels()[id] }}
         </div>
       }
     </div>
@@ -29,7 +29,7 @@
         <tbody>
           @for (hit of engine().hits(); track hit.targetId) {
             <tr>
-              <td>{{ targetLabels[hit.targetId] }}</td>
+              <td>{{ targetLabels()[hit.targetId] }}</td>
               <td>{{ formatDuration(hit.splitMs) }}</td>
             </tr>
           }

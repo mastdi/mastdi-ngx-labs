@@ -5,6 +5,20 @@
 
   <mat-card-content>
     <form [formGroup]="configForm" (ngSubmit)="submit()">
+      <div class="labels-builder" formGroupName="labels">
+        <p>Name each target (shared by both robots if two are selected):</p>
+        @for (id of targetIds; track id) {
+          <mat-form-field appearance="outline">
+            <mat-label>Target {{ id + 1 }}</mat-label>
+            <input matInput [formControlName]="'target' + id" maxlength="24" />
+            <mat-hint>{{ keyHints[id] }}</mat-hint>
+          </mat-form-field>
+        }
+        @if (labelsInvalid()) {
+          <p class="error" role="alert">Give every target a name.</p>
+        }
+      </div>
+
       <mat-form-field appearance="outline">
         <mat-label>Hit-order rule</mat-label>
         <mat-select formControlName="mode">
@@ -22,7 +36,7 @@
               <mat-label>Position {{ position + 1 }}</mat-label>
               <mat-select [formControlName]="'position' + position">
                 @for (id of targetIds; track id) {
-                  <mat-option [value]="id">{{ targetLabels[id] }}</mat-option>
+                  <mat-option [value]="id">{{ labelFor(id) }}</mat-option>
                 }
               </mat-select>
             </mat-form-field>
@@ -38,7 +52,7 @@
           <mat-label>Target to hit last</mat-label>
           <mat-select formControlName="lastTargetId">
             @for (id of targetIds; track id) {
-              <mat-option [value]="id">{{ targetLabels[id] }}</mat-option>
+              <mat-option [value]="id">{{ labelFor(id) }}</mat-option>
             }
           </mat-select>
         </mat-form-field>

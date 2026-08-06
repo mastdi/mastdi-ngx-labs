@@ -26,7 +26,12 @@ describe('MazeConfigForm', () => {
     component.submit();
 
     expect(emitted).toEqual([
-      { config: { mode: 'any-order' }, dualMaze: false, countdownSeconds: 3 },
+      {
+        config: { mode: 'any-order' },
+        dualMaze: false,
+        countdownSeconds: 3,
+        labels: { 0: 'North', 1: 'East', 2: 'South', 3: 'West' },
+      },
     ]);
   });
 

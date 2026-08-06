@@ -17,10 +17,18 @@
         } @else {
           <div class="panels">
             @if (primaryEngine) {
-              <app-maze-run-panel [engine]="primaryEngine" label="Maze 1 (arrows)" />
+              <app-maze-run-panel
+                [engine]="primaryEngine"
+                [targetLabels]="targetLabels()"
+                label="Maze 1 (arrows)"
+              />
             }
             @if (secondaryEngine) {
-              <app-maze-run-panel [engine]="secondaryEngine" label="Maze 2 (WASD)" />
+              <app-maze-run-panel
+                [engine]="secondaryEngine"
+                [targetLabels]="targetLabels()"
+                label="Maze 2 (WASD)"
+              />
             }
           </div>
           @if (allFinished()) {

@@ -19,3 +19,9 @@ form {
   color: var(--mat-sys-error, #b3261e);
   margin: 0;
 }
+
+.labels-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}

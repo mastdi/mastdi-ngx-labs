@@ -6,7 +6,8 @@
     @case ('locked') {
       <app-vault-unlock
         (unlockComplete)="currentStatus.set('unlocked')"
-        (storageReset)="evaluateStorageState()">
+        (storageReset)="evaluateStorageState()"
+      >
       </app-vault-unlock>
     }
     @case ('unlocked') {
