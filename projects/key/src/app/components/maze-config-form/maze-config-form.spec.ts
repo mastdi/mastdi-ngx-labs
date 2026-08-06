@@ -42,4 +42,26 @@ describe('MazeConfigForm', () => {
 
     expect(component.canSubmit()).toBe(false);
   });
+
+  it('prefills from a prior setup when reopened', () => {
+    fixture.componentRef.setInput('initialSetup', {
+      config: { mode: 'last-only', lastTargetId: 2 },
+      dualMaze: true,
+      countdownSeconds: 5,
+      labels: { 0: 'Bookshelf', 1: 'Window', 2: 'Doorway', 3: 'Sofa' },
+    });
+    fixture.detectChanges();
+
+    const raw = component.configForm.getRawValue();
+    expect(raw.mode).toBe('last-only');
+    expect(raw.dualMaze).toBe(true);
+    expect(raw.countdownSeconds).toBe(5);
+    expect(raw.lastTargetId).toBe(2);
+    expect(raw.labels).toEqual({
+      target0: 'Bookshelf',
+      target1: 'Window',
+      target2: 'Doorway',
+      target3: 'Sofa',
+    });
+  });
 });

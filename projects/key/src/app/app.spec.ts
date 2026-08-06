@@ -26,7 +26,12 @@ describe('App', () => {
     const app = fixture.componentInstance;
     await fixture.whenStable();
 
-    app.onConfigured({ config: { mode: 'any-order' }, dualMaze: false, countdownSeconds: 3 });
+    app.onConfigured({
+      config: { mode: 'any-order' },
+      dualMaze: false,
+      countdownSeconds: 3,
+      labels: { '0': 'A', '1': 'B', '2': 'C', '3': 'D' },
+    });
     fixture.detectChanges();
 
     expect(app.phase()).toBe('ready');

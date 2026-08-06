@@ -21,6 +21,8 @@ export class App {
   readonly phase = signal<Phase>('config');
   readonly countdownValue = signal<number | null>(null);
   readonly targetLabels = signal<Record<TargetId, string>>(TARGET_LABELS);
+  /** Remembers the full last setup so "Back to setup" / "Run again" can prefill the form. */
+  readonly lastSetup = signal<MazeSetup | null>(null);
 
   primaryEngine: MazeRunEngine | null = null;
   secondaryEngine: MazeRunEngine | null = null;
@@ -33,6 +35,7 @@ export class App {
     this.secondaryEngine = setup.dualMaze ? new MazeRunEngine(setup.config) : null;
     this.countdownSeconds = setup.countdownSeconds;
     this.targetLabels.set(setup.labels);
+    this.lastSetup.set(setup);
     this.phase.set('ready');
   }
 

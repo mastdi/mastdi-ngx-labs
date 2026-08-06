@@ -1,7 +1,7 @@
 <div class="page">
   @switch (phase()) {
     @case ('config') {
-      <app-maze-config-form (configured)="onConfigured($event)" />
+      <app-maze-config-form [initialSetup]="lastSetup()" (configured)="onConfigured($event)" />
     }
     @case ('ready') {
       <div class="ready">

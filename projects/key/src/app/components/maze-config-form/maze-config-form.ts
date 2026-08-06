@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -51,7 +59,46 @@ export class MazeConfigForm {
     3: 'Arrow ← / A',
   };
 
+  /** Prior setup to reopen the form with, e.g. when returning via "Back to setup". */
+  readonly initialSetup = input<MazeSetup | null>(null);
+
   readonly configured = output<MazeSetup>();
+
+  constructor() {
+    // Reacts to initialSetup itself (rather than a one-shot ngOnInit) so a value
+    // arriving after the component's first change-detection pass — e.g. via
+    // fixture.componentRef.setInput() in tests, called after construction —
+    // still prefills the form correctly.
+    effect(() => {
+      const setup = this.initialSetup();
+      if (!setup) return;
+
+      this.configForm.patchValue({
+        mode: setup.config.mode,
+        dualMaze: setup.dualMaze,
+        countdownSeconds: setup.countdownSeconds,
+        labels: {
+          target0: setup.labels[0],
+          target1: setup.labels[1],
+          target2: setup.labels[2],
+          target3: setup.labels[3],
+        },
+        lastTargetId:
+          setup.config.mode === 'last-only'
+            ? setup.config.lastTargetId
+            : this.configForm.controls.lastTargetId.value,
+        sequence:
+          setup.config.mode === 'sequence' && setup.config.sequence
+            ? {
+                position0: setup.config.sequence[0],
+                position1: setup.config.sequence[1],
+                position2: setup.config.sequence[2],
+                position3: setup.config.sequence[3],
+              }
+            : this.configForm.controls.sequence.getRawValue(),
+      });
+    });
+  }
 
   readonly configForm = this.fb.group({
     mode: this.fb.control<MazeMode>('any-order', { validators: [Validators.required] }),
