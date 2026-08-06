@@ -1,5 +1,14 @@
 .run-panel {
   min-width: 16rem;
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.run-panel.flash {
+  background-color: #098e5f;
+  border: 2px solid #0c7751;
+  color: #fff;
 }
 
 .targets {
@@ -14,11 +23,15 @@
   border: 2px solid var(--mat-sys-outline-variant, #ccc);
   border-radius: 0.5rem;
   font-size: 0.85rem;
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease;
 }
 
 .target.hit {
-  border-color: var(--mat-sys-primary, #2e7d32);
-  background: var(--mat-sys-primary-container, #e8f5e9);
+  border-color: #0c7751;
+  background: #045032;
+  color: #fff;
   font-weight: 600;
 }
 
@@ -28,6 +41,18 @@
   font-weight: 700;
   text-align: center;
   margin-top: 0.75rem;
+}
+
+.give-up {
+  display: block;
+  margin: 0.75rem auto 0;
+  color: #b3261e;
+  border-color: #b3261e;
+}
+
+.run-panel.flash .give-up {
+  color: #fff;
+  border-color: #fff;
 }
 
 .toast {
@@ -54,9 +79,4 @@ table.splits th {
 table.splits tr.total {
   font-weight: 700;
   border-top: 1px solid var(--mat-sys-outline-variant, #ccc);
-}
-
-.give-up {
-  display: block;
-  margin: 0.75rem auto 0;
 }

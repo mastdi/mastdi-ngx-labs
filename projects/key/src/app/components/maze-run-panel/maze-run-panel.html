@@ -1,4 +1,4 @@
-<mat-card class="run-panel">
+<mat-card class="run-panel" [class.flash]="cardFlash()">
   <mat-card-header>
     <mat-card-title>{{ label() }}</mat-card-title>
   </mat-card-header>
@@ -19,9 +19,7 @@
     }
 
     @if (isRunning()) {
-      <button mat-stroked-button color="warn" type="button" class="give-up" (click)="giveUp()">
-        Give up
-      </button>
+      <button mat-stroked-button type="button" class="give-up" (click)="giveUp()">Give up</button>
     }
 
     @if (isDone()) {

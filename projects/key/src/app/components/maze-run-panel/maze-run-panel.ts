@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   input,
   OnDestroy,
   OnInit,
@@ -27,7 +28,6 @@ import { formatDuration } from '../../engine/maze-io';
 export class MazeRunPanel implements OnInit, OnDestroy {
   readonly engine = input.required<MazeRunEngine>();
   readonly label = input('Maze');
-  /** Falls back to the compass defaults so existing callers/specs keep working unchanged. */
   readonly targetLabels = input<Record<TargetId, string>>(TARGET_LABELS);
 
   readonly targetIds = TARGET_IDS;
@@ -35,6 +35,11 @@ export class MazeRunPanel implements OnInit, OnDestroy {
 
   private readonly tick = signal(0);
   private tickTimer: ReturnType<typeof setInterval> | null = null;
+
+  /** True for 3s after each valid hit, driving the whole-card flash. */
+  readonly cardFlash = signal(false);
+  private flashTimer: ReturnType<typeof setTimeout> | null = null;
+  private lastFlashedHitCount = 0;
 
   readonly hitIds = computed(() => this.engine().hitTargetIds());
   readonly rejection = computed(() => this.engine().rejected());
@@ -46,8 +51,17 @@ export class MazeRunPanel implements OnInit, OnDestroy {
     return formatDuration(this.engine().elapsedMs());
   });
 
-  giveUp(): void {
-    this.engine().giveUp();
+  constructor() {
+    // Reacts to accepted hits only: registerHit() appends to hits() solely on a
+    // valid hit, so a rejected/wrong-target press never touches this signal and
+    // never triggers the card flash.
+    effect(() => {
+      const hitCount = this.engine().hits().length;
+      if (hitCount > this.lastFlashedHitCount) {
+        this.flashCard();
+      }
+      this.lastFlashedHitCount = hitCount;
+    });
   }
 
   ngOnInit(): void {
@@ -56,5 +70,19 @@ export class MazeRunPanel implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.tickTimer) clearInterval(this.tickTimer);
+    if (this.flashTimer) clearTimeout(this.flashTimer);
+  }
+
+  giveUp(): void {
+    this.engine().giveUp();
+  }
+
+  private flashCard(): void {
+    if (this.flashTimer) clearTimeout(this.flashTimer);
+    this.cardFlash.set(true);
+    this.flashTimer = setTimeout(() => {
+      this.cardFlash.set(false);
+      this.flashTimer = null;
+    }, 2000);
   }
 }
