@@ -32,7 +32,10 @@
             }
           </div>
           @if (allFinished()) {
-            <button mat-button (click)="resetToConfig()">Run again / change setup</button>
+            <div class="actions">
+              <button mat-flat-button color="primary" (click)="runAgain()">Run again</button>
+              <button mat-button (click)="resetToConfig()">Change setup</button>
+            </div>
           }
         }
       </div>

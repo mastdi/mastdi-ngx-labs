@@ -75,6 +75,15 @@ export class App {
     return primaryDone && secondaryDone;
   }
 
+  runAgain(): void {
+    // Reset engine timer/state instances if applicable
+    this.primaryEngine?.reset();
+    this.secondaryEngine?.reset();
+
+    // Set phase back to ready where the "Start" button is located
+    this.phase.set('ready');
+  }
+
   onKeydown(event: KeyboardEvent): void {
     if (this.isTypingTarget(event.target)) return;
 
