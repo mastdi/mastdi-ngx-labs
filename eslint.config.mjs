@@ -7,44 +7,54 @@ import { FlatCompat } from "@eslint/eslintrc";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const compat = new FlatCompat({
-    baseDirectory: __dirname,
-    recommendedConfig: js.configs.recommended,
-    allConfig: js.configs.all
+  baseDirectory: __dirname,
+  recommendedConfig: js.configs.recommended,
+  allConfig: js.configs.all
 });
 
-export default defineConfig([globalIgnores(["projects/**/*"]), {
+export default defineConfig([
+  // Change this to only ignore build/dist artifacts instead of "projects/**/*"
+  globalIgnores([
+    "dist/**/*",
+    ".angular/**/*",
+    "node_modules/**/*",
+    "coverage/**/*"
+  ]),
+  {
     files: ["**/*.ts"],
 
     extends: compat.extends(
-        "eslint:recommended",
-        "plugin:@typescript-eslint/recommended",
-        "plugin:@angular-eslint/recommended",
-        "plugin:@angular-eslint/template/process-inline-templates",
-        "prettier",
+      "eslint:recommended",
+      "plugin:@typescript-eslint/recommended",
+      "plugin:@angular-eslint/recommended",
+      "plugin:@angular-eslint/template/process-inline-templates",
+      "prettier",
     ),
 
     rules: {
-        "require-jsdoc": "off",
+      "require-jsdoc": "off",
 
-        "@angular-eslint/directive-selector": ["error", {
-            type: "attribute",
-            prefix: "app",
-            style: "camelCase",
-        }],
+      "@angular-eslint/directive-selector": ["error", {
+        type: "attribute",
+        prefix: "app",
+        style: "camelCase",
+      }],
 
-        "@angular-eslint/component-selector": ["error", {
-            type: "element",
-            prefix: "app",
-            style: "kebab-case",
-        }],
+      "@angular-eslint/component-selector": ["error", {
+        type: "element",
+        prefix: "app",
+        style: "kebab-case",
+      }],
     },
-}, {
+  },
+  {
     files: ["**/*.html"],
 
     extends: compat.extends(
-        "plugin:@angular-eslint/template/recommended",
-        "plugin:@angular-eslint/template/accessibility",
+      "plugin:@angular-eslint/template/recommended",
+      "plugin:@angular-eslint/template/accessibility",
     ),
 
     rules: {},
-}]);
+  }
+]);
