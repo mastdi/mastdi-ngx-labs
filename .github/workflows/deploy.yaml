@@ -6,7 +6,36 @@ on:
       - main
 
 jobs:
-  build-and-deploy-tanita:
+  # 1. Detect which projects have changed
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      tanita: ${{ steps.filter.outputs.tanita }}
+      key: ${{ steps.filter.outputs.key }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check for File Changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            tanita:
+              - 'projects/tanita/**'
+              - 'projects/shared-core/**'
+              - 'angular.json'
+              - 'package-lock.json'
+            key:
+              - 'projects/key/**'
+              - 'projects/shared-core/**'
+              - 'angular.json'
+              - 'package-lock.json'
+
+  # 2. Deploy Tanita
+  deploy-tanita:
+    needs: changes
+    if: ${{ needs.changes.outputs.tanita == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -19,18 +48,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+
       - name: Install Dependencies
         run: npm ci
 
       - name: Enforce Code Style
         run: npm run lint
 
-      - name: Run Workspace Validation Tests
+      - name: Test Tanita & Shared Core
         run: |
           npx ng test shared-core --watch=false
           npx ng test tanita --watch=false
 
-      - name: Build Production Distribution
+      - name: Build Tanita Production
         run: npx ng build tanita --configuration production
 
       - name: Deploy Tanita to Cloudflare Pages
@@ -39,3 +69,41 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist/tanita/browser --project-name=tanita
+
+  # 3. Deploy Key
+  deploy-key:
+    needs: changes
+    if: ${{ needs.changes.outputs.key == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Enforce Code Style
+        run: npm run lint
+
+      - name: Test Key & Shared Core
+        run: |
+          npx ng test shared-core --watch=false
+          npx ng test key --watch=false
+
+      - name: Build Key Production
+        run: npx ng build key --configuration production
+
+      - name: Deploy Key to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist/key/browser --project-name=key
