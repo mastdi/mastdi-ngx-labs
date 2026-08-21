@@ -5,71 +5,154 @@
 
   <mat-card-content>
     <form [formGroup]="configForm" (ngSubmit)="submit()">
-      <div class="labels-builder" formGroupName="labels">
-        <p>Name each target (shared by both robots if two are selected):</p>
-        @for (id of targetIds; track id) {
-          <mat-form-field appearance="outline">
-            <mat-label>Target {{ id + 1 }}</mat-label>
-            <input matInput [formControlName]="'target' + id" maxlength="24" />
-            <mat-hint>{{ keyHints[id] }}</mat-hint>
-          </mat-form-field>
-        }
-        @if (labelsInvalid()) {
-          <p class="error" role="alert">Give every target a name.</p>
-        }
-      </div>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Hit-order rule</mat-label>
-        <mat-select formControlName="mode">
-          <mat-option value="any-order">Any order</mat-option>
-          <mat-option value="sequence">Fixed sequence</mat-option>
-          <mat-option value="last-only">Hit this one last</mat-option>
-        </mat-select>
-      </mat-form-field>
-
-      @if (isSequenceMode()) {
-        <div class="sequence-builder" formGroupName="sequence">
-          <p>Order to hit the targets in:</p>
-          @for (position of sequencePositions; track position) {
+      <div class="form-content">
+        <div class="labels-builder" formGroupName="labels">
+          <p>Name each target (shared by both robots if two are selected):</p>
+          @for (id of targetIds; track id) {
             <mat-form-field appearance="outline">
-              <mat-label>Position {{ position + 1 }}</mat-label>
-              <mat-select [formControlName]="'position' + position">
-                @for (id of targetIds; track id) {
-                  <mat-option [value]="id">{{ labelFor(id) }}</mat-option>
-                }
-              </mat-select>
+              <mat-label>Target {{ id + 1 }}</mat-label>
+              <input matInput [formControlName]="'target' + id" maxlength="24" required />
+              <mat-hint>{{ keyHints[id] }}</mat-hint>
             </mat-form-field>
           }
-          @if (sequenceHasDuplicates()) {
-            <p class="error" role="alert">Each target must appear exactly once.</p>
+          @if (labelsInvalid()) {
+            <p class="error" role="alert">Give every target a name.</p>
           }
         </div>
-      }
 
-      @if (isLastOnlyMode()) {
         <mat-form-field appearance="outline">
-          <mat-label>Target to hit last</mat-label>
-          <mat-select formControlName="lastTargetId">
-            @for (id of targetIds; track id) {
-              <mat-option [value]="id">{{ labelFor(id) }}</mat-option>
-            }
+          <mat-label>Hit-order rule</mat-label>
+          <mat-select formControlName="mode">
+            <mat-option value="any-order">Any order</mat-option>
+            <mat-option value="sequence">Fixed sequence</mat-option>
+            <mat-option value="last-only">Hit this one last</mat-option>
           </mat-select>
         </mat-form-field>
-      }
 
-      <mat-slide-toggle formControlName="dualMaze">
-        Two robots at once (arrows + WASD)
-      </mat-slide-toggle>
+        @if (isSequenceMode()) {
+          <div class="sequence-builder" formGroupName="sequence">
+            <p>Order to hit the targets in:</p>
+            @for (position of sequencePositions; track position) {
+              <mat-form-field appearance="outline">
+                <mat-label>Position {{ position + 1 }}</mat-label>
+                <mat-select [formControlName]="'position' + position">
+                  @for (id of targetIds; track id) {
+                    <mat-option [value]="id">{{ labelFor(id) }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
+            @if (sequenceHasDuplicates()) {
+              <p class="error" role="alert">Each target must appear exactly once.</p>
+            }
+          </div>
+        }
 
-      <mat-form-field appearance="outline">
-        <mat-label>Countdown (seconds)</mat-label>
-        <input matInput type="number" min="0" max="10" formControlName="countdownSeconds" />
-      </mat-form-field>
+        @if (isLastOnlyMode()) {
+          <mat-form-field appearance="outline">
+            <mat-label>Target to hit last</mat-label>
+            <mat-select formControlName="lastTargetId">
+              @for (id of targetIds; track id) {
+                <mat-option [value]="id">{{ labelFor(id) }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
 
-      <button mat-flat-button color="primary" type="submit" [disabled]="!canSubmit()">
-        Continue to start
-      </button>
+        <mat-slide-toggle formControlName="dualMaze">
+          Two robots at once (arrows + WASD)
+        </mat-slide-toggle>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Countdown (seconds)</mat-label>
+          <input matInput type="number" min="0" max="10" formControlName="countdownSeconds" />
+        </mat-form-field>
+
+        <mat-expansion-panel class="advanced-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title>Advanced</mat-panel-title>
+            <mat-panel-description>IntraManager Board connection</mat-panel-description>
+          </mat-expansion-panel-header>
+
+          <section class="advanced-content" aria-labelledby="board-connection-heading">
+            <h2 id="board-connection-heading">IntraManager Board connection</h2>
+            <p>
+              Optionally connect this browser to Board. The key is verified before it is encrypted
+              and stored locally.
+            </p>
+
+            @if (hasStoredApiKey() && connectionState() !== 'success') {
+              <p class="success" role="status">An encrypted API key is stored on this browser.</p>
+            }
+
+            <div class="integration-fields" [formGroup]="integrationForm">
+              <mat-form-field appearance="outline">
+                <mat-label>API key</mat-label>
+                <input
+                  matInput
+                  type="password"
+                  formControlName="apiKey"
+                  autocomplete="off"
+                  required
+                />
+                @if (
+                  integrationForm.controls.apiKey.touched &&
+                  (integrationForm.controls.apiKey.hasError('required') ||
+                    integrationForm.controls.apiKey.hasError('pattern'))
+                ) {
+                  <mat-error>Enter an API key.</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Master password</mat-label>
+                <input
+                  matInput
+                  type="password"
+                  formControlName="masterPassword"
+                  autocomplete="new-password"
+                  required
+                />
+                <mat-hint>Used to encrypt the API key; it is not stored.</mat-hint>
+                @if (
+                  integrationForm.controls.masterPassword.touched &&
+                  integrationForm.controls.masterPassword.hasError('minlength')
+                ) {
+                  <mat-error>Use at least 6 characters.</mat-error>
+                }
+              </mat-form-field>
+            </div>
+
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="integrationForm.invalid || connectionState() === 'testing'"
+              (click)="testAndStoreApiKey()"
+            >
+              {{ connectionState() === 'testing' ? 'Testing…' : 'Test and save API key' }}
+            </button>
+
+            @if (connectionState() === 'success') {
+              <p class="success" role="status">
+                Connection verified. The API key was saved securely.
+              </p>
+            } @else if (connectionState() === 'error') {
+              <p class="error" role="alert">{{ connectionError() }}</p>
+            }
+          </section>
+        </mat-expansion-panel>
+
+        <div class="form-actions">
+          <button
+            mat-flat-button
+            color="primary"
+            type="submit"
+            [disabled]="configForm.invalid || !canSubmit()"
+          >
+            Continue to start
+          </button>
+        </div>
+      </div>
     </form>
   </mat-card-content>
 </mat-card>

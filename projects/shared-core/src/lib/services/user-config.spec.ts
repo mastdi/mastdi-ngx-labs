@@ -1,12 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 
-import { UserConfig } from './user-config';
+import { USER_CONFIG_PREFIX, UserConfig } from './user-config';
 
 describe('UserConfig', () => {
   let service: UserConfig;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({
+      providers: [{ provide: USER_CONFIG_PREFIX, useValue: 'MASTDI_TEST_' }],
+    });
     service = TestBed.inject(UserConfig);
     service.clear();
   });
@@ -31,6 +33,8 @@ describe('UserConfig', () => {
     // Assert: Verify values persist exactly as assigned using public getters
     expect(service.url).toBe(testUrl);
     expect(service.header).toBe(testHeader);
+    expect(localStorage.getItem('MASTDI_TEST_URL')).toBe(testUrl);
+    expect(localStorage.getItem('MASTDI_TEST_HEADER')).toBe(testHeader);
   });
 
   it('should throw an error when accessing properties that have not been configured', () => {

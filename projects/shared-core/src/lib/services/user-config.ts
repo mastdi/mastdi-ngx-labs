@@ -1,17 +1,17 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable, InjectionToken } from '@angular/core';
+
+export const USER_CONFIG_PREFIX = new InjectionToken<string>('USER_CONFIG_PREFIX', {
+  providedIn: 'root',
+  factory: () => 'MASTDI_TANITA_',
+});
 
 @Injectable({
   providedIn: 'root',
 })
 export class UserConfig {
-  private readonly PREFIX = 'MASTDI_TANITA_';
-  private readonly URL_KEY: string;
-  private readonly HEADER_KEY: string;
-
-  constructor() {
-    this.URL_KEY = this.PREFIX + 'URL';
-    this.HEADER_KEY = this.PREFIX + 'HEADER';
-  }
+  private readonly prefix = inject(USER_CONFIG_PREFIX);
+  private readonly URL_KEY = this.prefix + 'URL';
+  private readonly HEADER_KEY = this.prefix + 'HEADER';
 
   get url(): string {
     const url = localStorage.getItem(this.URL_KEY);

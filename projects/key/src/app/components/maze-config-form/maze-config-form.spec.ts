@@ -1,4 +1,6 @@
+import { provideHttpClient } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { IntraManagerApi } from '../../services/intramanager-api';
 import { MazeConfigForm } from './maze-config-form';
 
 describe('MazeConfigForm', () => {
@@ -8,6 +10,7 @@ describe('MazeConfigForm', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [MazeConfigForm],
+      providers: [provideHttpClient()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(MazeConfigForm);
@@ -63,5 +66,23 @@ describe('MazeConfigForm', () => {
       target2: 'Doorway',
       target3: 'Sofa',
     });
+  });
+
+  it('tests and stores valid Advanced API-key settings', async () => {
+    const intraManagerApi = TestBed.inject(IntraManagerApi);
+    const testAndStore = vi
+      .spyOn(intraManagerApi, 'testAndStoreApiKey')
+      .mockResolvedValue(undefined);
+    component.integrationForm.setValue({
+      apiKey: 'board-key',
+      masterPassword: 'master-password',
+    });
+
+    await component.testAndStoreApiKey();
+
+    expect(testAndStore).toHaveBeenCalledWith('board-key', 'master-password');
+    expect(component.connectionState()).toBe('success');
+    expect(component.hasStoredApiKey()).toBe(true);
+    expect(component.integrationForm.getRawValue()).toEqual({ apiKey: '', masterPassword: '' });
   });
 });

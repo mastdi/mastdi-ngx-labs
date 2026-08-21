@@ -6,11 +6,13 @@ import {
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -22,6 +24,9 @@ import {
   type MazeMode,
   type TargetId,
 } from '../../engine/maze-run-engine';
+import { IntraManagerApi } from '../../services/intramanager-api';
+
+type ConnectionState = 'idle' | 'testing' | 'success' | 'error';
 
 export interface MazeSetup {
   config: MazeConfig;
@@ -36,6 +41,7 @@ export interface MazeSetup {
     ReactiveFormsModule,
     MatButtonModule,
     MatCardModule,
+    MatExpansionModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -47,6 +53,7 @@ export interface MazeSetup {
 })
 export class MazeConfigForm {
   private readonly fb = inject(NonNullableFormBuilder);
+  private readonly intraManagerApi = inject(IntraManagerApi);
 
   readonly targetIds = TARGET_IDS;
   readonly sequencePositions = [0, 1, 2, 3] as const;
@@ -63,6 +70,9 @@ export class MazeConfigForm {
   readonly initialSetup = input<MazeSetup | null>(null);
 
   readonly configured = output<MazeSetup>();
+  readonly connectionState = signal<ConnectionState>('idle');
+  readonly connectionError = signal('');
+  readonly hasStoredApiKey = signal(this.intraManagerApi.hasStoredApiKey());
 
   constructor() {
     // Reacts to initialSetup itself (rather than a one-shot ngOnInit) so a value
@@ -129,6 +139,15 @@ export class MazeConfigForm {
     }),
   });
 
+  readonly integrationForm = this.fb.group({
+    apiKey: this.fb.control('', {
+      validators: [Validators.required, Validators.pattern(/\S/)],
+    }),
+    masterPassword: this.fb.control('', {
+      validators: [Validators.required, Validators.minLength(6)],
+    }),
+  });
+
   // Read labels back out with the same 'target' + id key convention used above.
   private readonly labelKey = (id: TargetId) => `target${id}` as const;
 
@@ -168,6 +187,27 @@ export class MazeConfigForm {
     return this.currentLabels()[this.labelKey(id)] || TARGET_LABELS[id];
   }
 
+  async testAndStoreApiKey(): Promise<void> {
+    if (this.integrationForm.invalid || this.connectionState() === 'testing') {
+      this.integrationForm.markAllAsTouched();
+      return;
+    }
+
+    const { apiKey, masterPassword } = this.integrationForm.getRawValue();
+    this.connectionState.set('testing');
+    this.connectionError.set('');
+
+    try {
+      await this.intraManagerApi.testAndStoreApiKey(apiKey, masterPassword);
+      this.integrationForm.reset();
+      this.hasStoredApiKey.set(true);
+      this.connectionState.set('success');
+    } catch (error: unknown) {
+      this.connectionError.set(this.connectionErrorMessage(error));
+      this.connectionState.set('error');
+    }
+  }
+
   submit(): void {
     if (this.configForm.invalid || !this.canSubmit()) return;
 
@@ -200,5 +240,16 @@ export class MazeConfigForm {
       countdownSeconds: raw.countdownSeconds,
       labels,
     });
+  }
+
+  private connectionErrorMessage(error: unknown): string {
+    if (typeof error === 'object' && error !== null && 'status' in error) {
+      const status = error.status;
+      if (status === 401 || status === 403) {
+        return 'The API key was rejected. Check the key and try again.';
+      }
+    }
+
+    return 'The connection could not be verified. Check the key and your network connection.';
   }
 }
