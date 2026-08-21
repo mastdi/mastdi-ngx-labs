@@ -99,6 +99,56 @@ describe('IntraManagerApi', () => {
     );
     expect(userConfig.header).toBe('encrypted-api-header');
     expect(service.storedIntegrationId()).toBe(12);
+    expect(service.isBoardIntegrationUnlocked()).toBe(true);
+  });
+
+  it('loads organization users with the unlocked Board token', async () => {
+    userConfig.url = IntraManagerApi.integrationsUrl;
+    userConfig.header = 'encrypted-api-header';
+    userConfig.integrationId = 12;
+
+    const unlock = service.unlockStoredApiKey('master-password');
+    await Promise.resolve();
+    httpTesting.expectOne(IntraManagerApi.integrationsUrl).flush({
+      integrations: [
+        { active: true, integration_id: 12, title: 'Stored integration', type: 'api' },
+      ],
+    });
+    await unlock;
+
+    const result = service.getOrganizationUsers();
+    const request = httpTesting.expectOne(IntraManagerApi.organizationUsersUrl);
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.get('token')).toBe('stored-board-key');
+    request.flush({
+      users: [
+        {
+          active: true,
+          display_name: 'Ada Lovelace',
+          email: 'ada@example.com',
+          first_name: 'Ada',
+          last_name: 'Lovelace',
+          user_id: 42,
+        },
+      ],
+    });
+
+    await expect(result).resolves.toEqual([
+      {
+        active: true,
+        display_name: 'Ada Lovelace',
+        email: 'ada@example.com',
+        first_name: 'Ada',
+        last_name: 'Lovelace',
+        user_id: 42,
+      },
+    ]);
+  });
+
+  it('does not load organization users before Board settings are unlocked', async () => {
+    await expect(service.getOrganizationUsers()).rejects.toThrow(
+      'The Board settings must be unlocked before users can be loaded.',
+    );
   });
 
   it('resets all stored settings', () => {

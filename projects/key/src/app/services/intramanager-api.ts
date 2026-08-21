@@ -19,9 +19,22 @@ interface IntegrationResponseItem {
   type: string | null;
 }
 
+interface OrganizationUsersResponse {
+  users: OrganizationUser[];
+}
+
 export interface IntegrationOption {
   integration_id: number;
   title: string;
+}
+
+export interface OrganizationUser {
+  active: boolean;
+  display_name: string | null;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  user_id: number | null;
 }
 
 @Injectable({
@@ -29,10 +42,13 @@ export interface IntegrationOption {
 })
 export class IntraManagerApi {
   static readonly integrationsUrl = 'https://board-api.intramanager.com/v1/integrations';
+  static readonly organizationUsersUrl =
+    'https://board-api.intramanager.com/v1/organizations/users';
 
   private readonly http = inject(HttpClient);
   private readonly secureStorage = inject(SecureStorage);
   private readonly userConfig = inject(UserConfig);
+  private unlockedHeader: StoredApiHeader | null = null;
 
   hasStoredApiKey(): boolean {
     return this.userConfig.isConfigSet();
@@ -57,6 +73,7 @@ export class IntraManagerApi {
 
     this.userConfig.url = IntraManagerApi.integrationsUrl;
     this.userConfig.header = encryptedHeader;
+    this.unlockedHeader = header;
 
     return this.integrationOptions(response);
   }
@@ -72,8 +89,29 @@ export class IntraManagerApi {
         headers: new HttpHeaders({ [header.key]: header.value }),
       }),
     );
+    this.unlockedHeader = header;
 
     return this.integrationOptions(response);
+  }
+
+  isBoardIntegrationUnlocked(): boolean {
+    return this.unlockedHeader !== null && this.storedIntegrationId() !== null;
+  }
+
+  async getOrganizationUsers(): Promise<OrganizationUser[]> {
+    if (!this.unlockedHeader) {
+      throw new Error('The Board settings must be unlocked before users can be loaded.');
+    }
+
+    const response = await firstValueFrom(
+      this.http.get<OrganizationUsersResponse>(IntraManagerApi.organizationUsersUrl, {
+        headers: new HttpHeaders({
+          [this.unlockedHeader.key]: this.unlockedHeader.value,
+        }),
+      }),
+    );
+
+    return response.users;
   }
 
   storedIntegrationId(): number | null {
@@ -81,6 +119,7 @@ export class IntraManagerApi {
   }
 
   resetStoredSettings(): void {
+    this.unlockedHeader = null;
     this.userConfig.clear();
   }
 

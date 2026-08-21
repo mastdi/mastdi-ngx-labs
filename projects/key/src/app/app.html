@@ -6,6 +6,64 @@
     @case ('ready') {
       <div class="ready">
         <p>Robots in position at their starting target. Press start when ready.</p>
+        @if (usersState() !== 'idle') {
+          <section class="board-users" aria-labelledby="robot-controllers-heading">
+            <h2 id="robot-controllers-heading">Robot controllers</h2>
+            @switch (usersState()) {
+              @case ('loading') {
+                <p role="status">Loading Board users...</p>
+              }
+              @case ('error') {
+                <p class="error" role="alert">Board users could not be loaded.</p>
+              }
+              @case ('success') {
+                @if (organizationUsers().length > 0) {
+                  <div class="controller-selectors" [class.dual]="secondaryEngine">
+                    <mat-form-field appearance="outline">
+                      <mat-label>Arrows controller</mat-label>
+                      <mat-select
+                        class="controller-select"
+                        [value]="primaryController()"
+                        (selectionChange)="primaryController.set($event.value)"
+                      >
+                        @for (user of organizationUsers(); track user.user_id ?? $index) {
+                          <mat-option [value]="user">
+                            {{ organizationUserName(user) }}
+                            @if (user.email && user.email !== organizationUserName(user)) {
+                              — {{ user.email }}
+                            }
+                          </mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+
+                    @if (secondaryEngine) {
+                      <mat-form-field appearance="outline">
+                        <mat-label>WASD controller</mat-label>
+                        <mat-select
+                          class="controller-select"
+                          [value]="secondaryController()"
+                          (selectionChange)="secondaryController.set($event.value)"
+                        >
+                          @for (user of organizationUsers(); track user.user_id ?? $index) {
+                            <mat-option [value]="user">
+                              {{ organizationUserName(user) }}
+                              @if (user.email && user.email !== organizationUserName(user)) {
+                                — {{ user.email }}
+                              }
+                            </mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+                    }
+                  </div>
+                } @else {
+                  <p role="status">No Board users are available.</p>
+                }
+              }
+            }
+          </section>
+        }
         <button mat-flat-button color="primary" (click)="beginCountdown()">Start</button>
         <button mat-button (click)="resetToConfig()">Back to setup</button>
       </div>
@@ -20,14 +78,14 @@
               <app-maze-run-panel
                 [engine]="primaryEngine"
                 [targetLabels]="targetLabels()"
-                label="Maze 1 (arrows)"
+                [label]="primaryRunLabel()"
               />
             }
             @if (secondaryEngine) {
               <app-maze-run-panel
                 [engine]="secondaryEngine"
                 [targetLabels]="targetLabels()"
-                label="Maze 2 (WASD)"
+                [label]="secondaryRunLabel()"
               />
             }
           </div>
