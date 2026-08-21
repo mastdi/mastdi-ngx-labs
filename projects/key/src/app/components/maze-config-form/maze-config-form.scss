@@ -29,6 +29,12 @@
   justify-content: flex-end;
 }
 
+.stored-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .sequence-builder {
   display: flex;
   flex-direction: column;

@@ -1,5 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { UserConfig } from 'shared-core';
 import { IntraManagerApi } from '../../services/intramanager-api';
 import { MazeConfigForm } from './maze-config-form';
 
@@ -8,6 +9,7 @@ describe('MazeConfigForm', () => {
   let fixture: ComponentFixture<MazeConfigForm>;
 
   beforeEach(async () => {
+    localStorage.clear();
     await TestBed.configureTestingModule({
       imports: [MazeConfigForm],
       providers: [provideHttpClient()],
@@ -20,6 +22,19 @@ describe('MazeConfigForm', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('detects encrypted settings already stored in the browser', async () => {
+    const userConfig = TestBed.inject(UserConfig);
+    userConfig.url = IntraManagerApi.integrationsUrl;
+    userConfig.header = 'encrypted-api-header';
+    fixture.destroy();
+
+    fixture = TestBed.createComponent(MazeConfigForm);
+    component = fixture.componentInstance;
+    await fixture.whenStable();
+
+    expect(component.hasStoredApiKey()).toBe(true);
   });
 
   it('emits any-order config by default', () => {
@@ -94,5 +109,39 @@ describe('MazeConfigForm', () => {
     component.storeIntegrationId(12);
 
     expect(storeIntegrationId).toHaveBeenCalledWith(12);
+  });
+
+  it('unlocks stored settings and preselects the saved integration', async () => {
+    const intraManagerApi = TestBed.inject(IntraManagerApi);
+    vi.spyOn(intraManagerApi, 'unlockStoredApiKey').mockResolvedValue([
+      { integration_id: 12, title: 'Saved integration' },
+      { integration_id: 18, title: 'Another integration' },
+    ]);
+    vi.spyOn(intraManagerApi, 'storedIntegrationId').mockReturnValue(12);
+    component.hasStoredApiKey.set(true);
+    component.unlockForm.setValue({ masterPassword: 'master-password' });
+
+    await component.unlockStoredSettings();
+
+    expect(intraManagerApi.unlockStoredApiKey).toHaveBeenCalledWith('master-password');
+    expect(component.connectionState()).toBe('success');
+    expect(component.integrationId.value).toBe(12);
+    expect(component.integrations()).toHaveLength(2);
+  });
+
+  it('clears stored settings and returns to API-key setup', () => {
+    const intraManagerApi = TestBed.inject(IntraManagerApi);
+    const resetStoredSettings = vi.spyOn(intraManagerApi, 'resetStoredSettings');
+    component.hasStoredApiKey.set(true);
+    component.integrations.set([{ integration_id: 12, title: 'Saved integration' }]);
+    component.integrationId.setValue(12);
+
+    component.resetStoredSettings();
+
+    expect(resetStoredSettings).toHaveBeenCalledOnce();
+    expect(component.hasStoredApiKey()).toBe(false);
+    expect(component.integrations()).toEqual([]);
+    expect(component.integrationId.value).toBeNull();
+    expect(component.connectionState()).toBe('idle');
   });
 });

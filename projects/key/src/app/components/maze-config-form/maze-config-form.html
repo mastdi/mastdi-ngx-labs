@@ -82,59 +82,97 @@
             </p>
 
             @if (hasStoredApiKey() && connectionState() !== 'success') {
-              <p class="success" role="status">An encrypted API key is stored on this browser.</p>
+              <p class="success" role="status">Encrypted settings are stored on this browser.</p>
+              <div class="integration-fields" [formGroup]="unlockForm">
+                <mat-form-field appearance="outline">
+                  <mat-label>Master password</mat-label>
+                  <input
+                    matInput
+                    type="password"
+                    formControlName="masterPassword"
+                    autocomplete="current-password"
+                    required
+                  />
+                  <mat-hint>Unlocks the saved API key; it is not stored.</mat-hint>
+                  @if (
+                    unlockForm.controls.masterPassword.touched &&
+                    unlockForm.controls.masterPassword.hasError('required')
+                  ) {
+                    <mat-error>Enter your master password.</mat-error>
+                  }
+                </mat-form-field>
+              </div>
+
+              <div class="stored-settings-actions">
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="unlockForm.invalid || connectionState() === 'unlocking'"
+                  (click)="unlockStoredSettings()"
+                >
+                  {{ connectionState() === 'unlocking' ? 'Unlocking...' : 'Unlock settings' }}
+                </button>
+                <button
+                  mat-button
+                  type="button"
+                  [disabled]="connectionState() === 'unlocking'"
+                  (click)="resetStoredSettings()"
+                >
+                  Reset settings
+                </button>
+              </div>
+            } @else if (!hasStoredApiKey()) {
+              <div class="integration-fields" [formGroup]="integrationForm">
+                <mat-form-field appearance="outline">
+                  <mat-label>API key</mat-label>
+                  <input
+                    matInput
+                    type="password"
+                    formControlName="apiKey"
+                    autocomplete="off"
+                    required
+                  />
+                  @if (
+                    integrationForm.controls.apiKey.touched &&
+                    (integrationForm.controls.apiKey.hasError('required') ||
+                      integrationForm.controls.apiKey.hasError('pattern'))
+                  ) {
+                    <mat-error>Enter an API key.</mat-error>
+                  }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Master password</mat-label>
+                  <input
+                    matInput
+                    type="password"
+                    formControlName="masterPassword"
+                    autocomplete="new-password"
+                    required
+                  />
+                  <mat-hint>Used to encrypt the API key; it is not stored.</mat-hint>
+                  @if (
+                    integrationForm.controls.masterPassword.touched &&
+                    integrationForm.controls.masterPassword.hasError('minlength')
+                  ) {
+                    <mat-error>Use at least 6 characters.</mat-error>
+                  }
+                </mat-form-field>
+              </div>
+
+              <button
+                mat-stroked-button
+                type="button"
+                [disabled]="integrationForm.invalid || connectionState() === 'testing'"
+                (click)="testAndStoreApiKey()"
+              >
+                {{ connectionState() === 'testing' ? 'Testing…' : 'Test and save API key' }}
+              </button>
             }
-
-            <div class="integration-fields" [formGroup]="integrationForm">
-              <mat-form-field appearance="outline">
-                <mat-label>API key</mat-label>
-                <input
-                  matInput
-                  type="password"
-                  formControlName="apiKey"
-                  autocomplete="off"
-                  required
-                />
-                @if (
-                  integrationForm.controls.apiKey.touched &&
-                  (integrationForm.controls.apiKey.hasError('required') ||
-                    integrationForm.controls.apiKey.hasError('pattern'))
-                ) {
-                  <mat-error>Enter an API key.</mat-error>
-                }
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Master password</mat-label>
-                <input
-                  matInput
-                  type="password"
-                  formControlName="masterPassword"
-                  autocomplete="new-password"
-                  required
-                />
-                <mat-hint>Used to encrypt the API key; it is not stored.</mat-hint>
-                @if (
-                  integrationForm.controls.masterPassword.touched &&
-                  integrationForm.controls.masterPassword.hasError('minlength')
-                ) {
-                  <mat-error>Use at least 6 characters.</mat-error>
-                }
-              </mat-form-field>
-            </div>
-
-            <button
-              mat-stroked-button
-              type="button"
-              [disabled]="integrationForm.invalid || connectionState() === 'testing'"
-              (click)="testAndStoreApiKey()"
-            >
-              {{ connectionState() === 'testing' ? 'Testing…' : 'Test and save API key' }}
-            </button>
 
             @if (connectionState() === 'success') {
               <p class="success" role="status">
-                Connection verified. The API key was saved securely.
+                Connection verified. The encrypted settings are ready.
               </p>
               @if (integrations().length > 0) {
                 <mat-form-field appearance="outline">
@@ -154,6 +192,9 @@
               } @else {
                 <p role="status">No active integrations are available.</p>
               }
+              <button mat-button type="button" (click)="resetStoredSettings()">
+                Reset settings
+              </button>
             } @else if (connectionState() === 'error') {
               <p class="error" role="alert">{{ connectionError() }}</p>
             }

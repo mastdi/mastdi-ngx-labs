@@ -58,6 +58,33 @@ export class IntraManagerApi {
     this.userConfig.url = IntraManagerApi.integrationsUrl;
     this.userConfig.header = encryptedHeader;
 
+    return this.integrationOptions(response);
+  }
+
+  async unlockStoredApiKey(masterPassword: string): Promise<IntegrationOption[]> {
+    const decryptedHeader = await this.secureStorage.decryptSecret(
+      this.userConfig.header,
+      masterPassword,
+    );
+    const header = this.parseStoredHeader(decryptedHeader);
+    const response = await firstValueFrom(
+      this.http.get<IntegrationsResponse>(this.userConfig.url, {
+        headers: new HttpHeaders({ [header.key]: header.value }),
+      }),
+    );
+
+    return this.integrationOptions(response);
+  }
+
+  storedIntegrationId(): number | null {
+    return this.userConfig.integrationId;
+  }
+
+  resetStoredSettings(): void {
+    this.userConfig.clear();
+  }
+
+  private integrationOptions(response: IntegrationsResponse): IntegrationOption[] {
     return response.integrations
       .filter(
         (
@@ -72,6 +99,22 @@ export class IntraManagerApi {
           typeof integration.title === 'string',
       )
       .map(({ integration_id, title }) => ({ integration_id, title }));
+  }
+
+  private parseStoredHeader(value: string): StoredApiHeader {
+    const header: unknown = JSON.parse(value);
+    if (
+      typeof header !== 'object' ||
+      header === null ||
+      !('key' in header) ||
+      header.key !== 'token' ||
+      !('value' in header) ||
+      typeof header.value !== 'string'
+    ) {
+      throw new Error('The stored API-key settings are invalid.');
+    }
+
+    return { key: header.key, value: header.value };
   }
 
   storeIntegrationId(integrationId: number): void {

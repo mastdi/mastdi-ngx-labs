@@ -26,7 +26,7 @@ import {
 } from '../../engine/maze-run-engine';
 import { IntegrationOption, IntraManagerApi } from '../../services/intramanager-api';
 
-type ConnectionState = 'idle' | 'testing' | 'success' | 'error';
+type ConnectionState = 'idle' | 'testing' | 'unlocking' | 'success' | 'error';
 
 export interface MazeSetup {
   config: MazeConfig;
@@ -149,6 +149,12 @@ export class MazeConfigForm {
     }),
   });
 
+  readonly unlockForm = this.fb.group({
+    masterPassword: this.fb.control('', {
+      validators: [Validators.required],
+    }),
+  });
+
   readonly integrationId = this.fb.control<number | null>(null, Validators.required);
 
   // Read labels back out with the same 'target' + id key convention used above.
@@ -211,6 +217,50 @@ export class MazeConfigForm {
       this.connectionError.set(this.connectionErrorMessage(error));
       this.connectionState.set('error');
     }
+  }
+
+  async unlockStoredSettings(): Promise<void> {
+    if (this.unlockForm.invalid || this.connectionState() === 'unlocking') {
+      this.unlockForm.markAllAsTouched();
+      return;
+    }
+
+    this.connectionState.set('unlocking');
+    this.connectionError.set('');
+
+    try {
+      const integrations = await this.intraManagerApi.unlockStoredApiKey(
+        this.unlockForm.getRawValue().masterPassword,
+      );
+      const storedIntegrationId = this.intraManagerApi.storedIntegrationId();
+      const selectedIntegrationId = integrations.some(
+        ({ integration_id }) => integration_id === storedIntegrationId,
+      )
+        ? storedIntegrationId
+        : null;
+
+      this.unlockForm.reset();
+      this.integrations.set(integrations);
+      this.integrationId.setValue(selectedIntegrationId);
+      this.connectionState.set('success');
+    } catch {
+      this.unlockForm.reset();
+      this.connectionError.set(
+        'The settings could not be unlocked. Check your master password and try again.',
+      );
+      this.connectionState.set('error');
+    }
+  }
+
+  resetStoredSettings(): void {
+    this.intraManagerApi.resetStoredSettings();
+    this.hasStoredApiKey.set(false);
+    this.integrations.set([]);
+    this.integrationId.reset();
+    this.integrationForm.reset();
+    this.unlockForm.reset();
+    this.connectionError.set('');
+    this.connectionState.set('idle');
   }
 
   storeIntegrationId(integrationId: number): void {

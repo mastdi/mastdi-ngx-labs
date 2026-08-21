@@ -10,11 +10,16 @@ describe('IntraManagerApi', () => {
   let userConfig: UserConfig;
   const secureStorage = {
     encryptSecret: vi.fn<(secret: string, password: string) => Promise<string>>(),
+    decryptSecret: vi.fn<(secret: string, password: string) => Promise<string>>(),
   };
 
   beforeEach(() => {
     secureStorage.encryptSecret.mockReset();
     secureStorage.encryptSecret.mockResolvedValue('encrypted-api-header');
+    secureStorage.decryptSecret.mockReset();
+    secureStorage.decryptSecret.mockResolvedValue(
+      JSON.stringify({ key: 'token', value: 'stored-board-key' }),
+    );
 
     TestBed.configureTestingModule({
       providers: [
@@ -69,6 +74,42 @@ describe('IntraManagerApi', () => {
     expect(userConfig.integrationId).toBe(12);
     expect(localStorage.getItem('MASTDI_TANITA_INTEGRATION_ID')).toBe('12');
     expect(localStorage.length).toBe(1);
+  });
+
+  it('unlocks stored settings and fetches integrations without storing the decrypted key', async () => {
+    userConfig.url = IntraManagerApi.integrationsUrl;
+    userConfig.header = 'encrypted-api-header';
+    userConfig.integrationId = 12;
+
+    const result = service.unlockStoredApiKey('master-password');
+    await Promise.resolve();
+    const request = httpTesting.expectOne(IntraManagerApi.integrationsUrl);
+
+    expect(request.request.headers.get('token')).toBe('stored-board-key');
+    request.flush({
+      integrations: [
+        { active: true, integration_id: 12, title: 'Stored integration', type: 'api' },
+      ],
+    });
+
+    await expect(result).resolves.toEqual([{ integration_id: 12, title: 'Stored integration' }]);
+    expect(secureStorage.decryptSecret).toHaveBeenCalledWith(
+      'encrypted-api-header',
+      'master-password',
+    );
+    expect(userConfig.header).toBe('encrypted-api-header');
+    expect(service.storedIntegrationId()).toBe(12);
+  });
+
+  it('resets all stored settings', () => {
+    userConfig.url = IntraManagerApi.integrationsUrl;
+    userConfig.header = 'encrypted-api-header';
+    userConfig.integrationId = 12;
+
+    service.resetStoredSettings();
+
+    expect(service.hasStoredApiKey()).toBe(false);
+    expect(service.storedIntegrationId()).toBeNull();
   });
 
   it('does not store a rejected API key', async () => {
