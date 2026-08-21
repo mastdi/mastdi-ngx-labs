@@ -60,6 +60,30 @@
                 } @else {
                   <p role="status">No Board users are available.</p>
                 }
+                <form class="create-board-user" (submit)="createOrganizationUser($event)">
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>New Board user name</mat-label>
+                    <input matInput [formControl]="newUserName" autocomplete="off" required />
+                    @if (
+                      newUserName.touched &&
+                      (newUserName.hasError('required') || newUserName.hasError('pattern'))
+                    ) {
+                      <mat-error>Enter a name.</mat-error>
+                    }
+                  </mat-form-field>
+                  <button
+                    mat-stroked-button
+                    type="submit"
+                    [disabled]="newUserName.invalid || createUserState() === 'creating'"
+                  >
+                    {{ createUserState() === 'creating' ? 'Creating...' : 'Create Board user' }}
+                  </button>
+                </form>
+                @if (createUserState() === 'success') {
+                  <p role="status">Board user created and added to the dropdowns.</p>
+                } @else if (createUserState() === 'error') {
+                  <p class="error" role="alert">The Board user could not be created.</p>
+                }
               }
             }
           </section>

@@ -30,6 +30,7 @@ export interface IntegrationOption {
 
 export interface OrganizationUser {
   active: boolean;
+  alias?: string | null;
   display_name: string | null;
   email: string | null;
   first_name: string | null;
@@ -99,19 +100,25 @@ export class IntraManagerApi {
   }
 
   async getOrganizationUsers(): Promise<OrganizationUser[]> {
-    if (!this.unlockedHeader) {
-      throw new Error('The Board settings must be unlocked before users can be loaded.');
-    }
-
     const response = await firstValueFrom(
       this.http.get<OrganizationUsersResponse>(IntraManagerApi.organizationUsersUrl, {
-        headers: new HttpHeaders({
-          [this.unlockedHeader.key]: this.unlockedHeader.value,
-        }),
+        headers: this.unlockedHeaders(),
       }),
     );
 
     return response.users;
+  }
+
+  async createOrganizationUser(alias: string): Promise<OrganizationUser[]> {
+    await firstValueFrom(
+      this.http.post<unknown>(
+        IntraManagerApi.organizationUsersUrl,
+        { alias: alias.trim(), team_id: null },
+        { headers: this.unlockedHeaders() },
+      ),
+    );
+
+    return this.getOrganizationUsers();
   }
 
   storedIntegrationId(): number | null {
@@ -154,6 +161,14 @@ export class IntraManagerApi {
     }
 
     return { key: header.key, value: header.value };
+  }
+
+  private unlockedHeaders(): HttpHeaders {
+    if (!this.unlockedHeader) {
+      throw new Error('The Board settings must be unlocked before users can be loaded.');
+    }
+
+    return new HttpHeaders({ [this.unlockedHeader.key]: this.unlockedHeader.value });
   }
 
   storeIntegrationId(integrationId: number): void {

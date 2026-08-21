@@ -97,7 +97,7 @@ describe('App', () => {
     fixture.detectChanges();
 
     const labels = Array.from(
-      (fixture.nativeElement as HTMLElement).querySelectorAll('mat-label'),
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.controller-selectors mat-label'),
       (label) => label.textContent,
     );
     expect(
@@ -168,5 +168,32 @@ describe('App', () => {
       (title) => title.textContent?.trim(),
     );
     expect(titles).toEqual(['Maze 1 (arrows)', 'Maze 2 (WASD)']);
+  });
+
+  it('creates a missing Board user and refreshes the dropdown users', async () => {
+    const intraManagerApi = TestBed.inject(IntraManagerApi);
+    const createdUser = {
+      active: true,
+      alias: 'New player',
+      display_name: '',
+      email: null,
+      first_name: '',
+      last_name: '',
+      user_id: 44,
+    };
+    vi.spyOn(intraManagerApi, 'createOrganizationUser').mockResolvedValue([createdUser]);
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const submitEvent = new Event('submit', { cancelable: true });
+    app.newUserName.setValue('New player');
+
+    await app.createOrganizationUser(submitEvent);
+
+    expect(submitEvent.defaultPrevented).toBe(true);
+    expect(intraManagerApi.createOrganizationUser).toHaveBeenCalledWith('New player');
+    expect(app.organizationUsers()).toEqual([createdUser]);
+    expect(app.organizationUserName(createdUser)).toBe('New player');
+    expect(app.newUserName.value).toBe('');
+    expect(app.createUserState()).toBe('success');
   });
 });

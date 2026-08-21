@@ -151,6 +151,45 @@ describe('IntraManagerApi', () => {
     );
   });
 
+  it('creates an organization user and refreshes the user list', async () => {
+    userConfig.url = IntraManagerApi.integrationsUrl;
+    userConfig.header = 'encrypted-api-header';
+    userConfig.integrationId = 12;
+
+    const unlock = service.unlockStoredApiKey('master-password');
+    await Promise.resolve();
+    httpTesting.expectOne(IntraManagerApi.integrationsUrl).flush({ integrations: [] });
+    await unlock;
+
+    const result = service.createOrganizationUser(' New player ');
+    const createRequest = httpTesting.expectOne(IntraManagerApi.organizationUsersUrl);
+    expect(createRequest.request.method).toBe('POST');
+    expect(createRequest.request.headers.get('token')).toBe('stored-board-key');
+    expect(createRequest.request.body).toEqual({ alias: 'New player', team_id: null });
+    createRequest.flush({});
+    await Promise.resolve();
+
+    const usersRequest = httpTesting.expectOne(IntraManagerApi.organizationUsersUrl);
+    expect(usersRequest.request.method).toBe('GET');
+    usersRequest.flush({
+      users: [
+        {
+          active: true,
+          alias: 'New player',
+          display_name: '',
+          email: null,
+          first_name: '',
+          last_name: '',
+          user_id: 44,
+        },
+      ],
+    });
+
+    await expect(result).resolves.toEqual([
+      expect.objectContaining({ alias: 'New player', user_id: 44 }),
+    ]);
+  });
+
   it('resets all stored settings', () => {
     userConfig.url = IntraManagerApi.integrationsUrl;
     userConfig.header = 'encrypted-api-header';

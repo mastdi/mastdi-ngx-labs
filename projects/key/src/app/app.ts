@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MazeConfigForm, type MazeSetup } from './components/maze-config-form/maze-config-form';
 import { MazeRunPanel } from './components/maze-run-panel/maze-run-panel';
 import { MazeRunEngine, TARGET_LABELS, type TargetId } from './engine/maze-run-engine';
@@ -10,10 +12,19 @@ import { IntraManagerApi, type OrganizationUser } from './services/intramanager-
 
 type Phase = 'config' | 'ready' | 'run';
 type UsersState = 'idle' | 'loading' | 'success' | 'error';
+type CreateUserState = 'idle' | 'creating' | 'success' | 'error';
 
 @Component({
   selector: 'app-root',
-  imports: [MatButtonModule, MatFormFieldModule, MatSelectModule, MazeConfigForm, MazeRunPanel],
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MazeConfigForm,
+    MazeRunPanel,
+  ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -33,6 +44,11 @@ export class App {
   readonly usersState = signal<UsersState>('idle');
   readonly primaryController = signal<OrganizationUser | null>(null);
   readonly secondaryController = signal<OrganizationUser | null>(null);
+  readonly newUserName = new FormControl('', {
+    nonNullable: true,
+    validators: [Validators.required, Validators.pattern(/\S/)],
+  });
+  readonly createUserState = signal<CreateUserState>('idle');
   readonly primaryRunLabel = computed(
     () => `Maze 1 (${this.controllerNameOrFallback(this.primaryController(), 'arrows')})`,
   );
@@ -54,6 +70,8 @@ export class App {
     this.lastSetup.set(setup);
     this.primaryController.set(null);
     this.secondaryController.set(null);
+    this.newUserName.reset();
+    this.createUserState.set('idle');
     this.phase.set('ready');
     void this.loadOrganizationUsers();
   }
@@ -107,10 +125,30 @@ export class App {
     const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
     return (
       user.display_name?.trim() ||
+      user.alias?.trim() ||
       fullName ||
       user.email?.trim() ||
       (user.user_id === null ? 'Unnamed user' : `User ${user.user_id}`)
     );
+  }
+
+  async createOrganizationUser(event?: Event): Promise<void> {
+    event?.preventDefault();
+
+    if (this.newUserName.invalid || this.createUserState() === 'creating') {
+      this.newUserName.markAsTouched();
+      return;
+    }
+
+    this.createUserState.set('creating');
+    try {
+      const users = await this.intraManagerApi.createOrganizationUser(this.newUserName.value);
+      this.organizationUsers.set(users);
+      this.newUserName.reset();
+      this.createUserState.set('success');
+    } catch {
+      this.createUserState.set('error');
+    }
   }
 
   onKeydown(event: KeyboardEvent): void {
