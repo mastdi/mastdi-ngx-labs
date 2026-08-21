@@ -256,6 +256,42 @@ describe('IntraManagerApi', () => {
     await expect(result).resolves.toBeUndefined();
   });
 
+  it('posts run data to the selected integration', async () => {
+    userConfig.url = IntraManagerApi.integrationsUrl;
+    userConfig.header = 'encrypted-api-header';
+    userConfig.integrationId = 12;
+    const unlock = service.unlockStoredApiKey('master-password');
+    await Promise.resolve();
+    httpTesting.expectOne(IntraManagerApi.integrationsUrl).flush({ integrations: [] });
+    await unlock;
+    const data = {
+      PrimaryKey: 'participant-id',
+      RunId: 'run-id',
+      UserId: 42,
+      TeamId: 3,
+      TeamName: 'BlueBot',
+      StartedAt: '2026-08-21T22:04:53.000Z',
+      Progress: 0 as const,
+      CheckpointsReached: 0,
+      Completed: false,
+    };
+
+    const result = service.postIntegrationData(data);
+    const request = httpTesting.expectOne(
+      'https://board-data-server.intramanager.com/v1/integrations/12/data',
+    );
+    expect(request.request.method).toBe('POST');
+    expect(request.request.headers.get('token')).toBe('stored-board-key');
+    expect(request.request.body).toEqual({
+      ...data,
+      UpdatedAt: expect.any(String),
+    });
+    expect(Number.isNaN(Date.parse(request.request.body.UpdatedAt))).toBe(false);
+    request.flush({});
+
+    await expect(result).resolves.toBeUndefined();
+  });
+
   it('resets all stored settings', () => {
     userConfig.url = IntraManagerApi.integrationsUrl;
     userConfig.header = 'encrypted-api-header';

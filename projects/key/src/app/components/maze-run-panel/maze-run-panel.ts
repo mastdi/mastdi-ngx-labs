@@ -6,6 +6,7 @@ import {
   input,
   OnDestroy,
   OnInit,
+  output,
   signal,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -29,6 +30,7 @@ export class MazeRunPanel implements OnInit, OnDestroy {
   readonly engine = input.required<MazeRunEngine>();
   readonly label = input('Maze');
   readonly targetLabels = input<Record<TargetId, string>>(TARGET_LABELS);
+  readonly runEnded = output<void>();
 
   readonly targetIds = TARGET_IDS;
   readonly formatDuration = formatDuration;
@@ -75,6 +77,7 @@ export class MazeRunPanel implements OnInit, OnDestroy {
 
   giveUp(): void {
     this.engine().giveUp();
+    this.runEnded.emit();
   }
 
   private flashCard(): void {

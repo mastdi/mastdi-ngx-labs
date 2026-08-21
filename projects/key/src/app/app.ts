@@ -4,12 +4,19 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { v4 as uuidv4 } from 'uuid';
 import { MazeConfigForm, type MazeSetup } from './components/maze-config-form/maze-config-form';
 import { MazeRunPanel } from './components/maze-run-panel/maze-run-panel';
-import { MazeRunEngine, TARGET_LABELS, type TargetId } from './engine/maze-run-engine';
+import {
+  MazeRunEngine,
+  TARGET_LABELS,
+  type TargetHit,
+  type TargetId,
+} from './engine/maze-run-engine';
 import { ARROW_KEY_MAP, WASD_KEY_MAP } from './engine/maze-io';
 import {
   IntraManagerApi,
+  type MazeRunIntegrationSnapshot,
   type OrganizationTeam,
   type OrganizationUser,
 } from './services/intramanager-api';
@@ -18,6 +25,14 @@ type Phase = 'config' | 'ready' | 'run';
 type UsersState = 'idle' | 'loading' | 'success' | 'error';
 type CreateUserState = 'idle' | 'creating' | 'success' | 'error';
 type StartState = 'idle' | 'adding-users' | 'error';
+
+interface RunIntegrationContext {
+  primaryKey: string;
+  runId: string;
+  startedAtMs: number;
+  team: OrganizationTeam;
+  user: OrganizationUser & { user_id: number };
+}
 
 @Component({
   selector: 'app-root',
@@ -59,6 +74,7 @@ export class App {
   readonly createUserState = signal<CreateUserState>('idle');
   readonly startState = signal<StartState>('idle');
   readonly startError = signal('');
+  readonly integrationSyncError = signal('');
   readonly startDisabled = computed(() => {
     if (this.startState() === 'adding-users') return true;
     if (this.usersState() === 'idle') return false;
@@ -82,6 +98,8 @@ export class App {
   private countdownSeconds = 3;
   private countdownTimer: ReturnType<typeof setInterval> | null = null;
   private readonly confirmedMemberships = signal<ReadonlySet<string>>(new Set());
+  private readonly runContexts = new Map<MazeRunEngine, RunIntegrationContext>();
+  private readonly integrationQueues = new Map<MazeRunEngine, Promise<void>>();
 
   onConfigured(setup: MazeSetup): void {
     this.primaryEngine = new MazeRunEngine(setup.config);
@@ -98,6 +116,8 @@ export class App {
     this.createUserState.set('idle');
     this.startState.set('idle');
     this.startError.set('');
+    this.integrationSyncError.set('');
+    this.runContexts.clear();
     this.phase.set('ready');
     void this.loadOrganizationUsers();
   }
@@ -225,20 +245,58 @@ export class App {
     const primaryTarget = ARROW_KEY_MAP[event.key];
     if (primaryTarget !== undefined && this.primaryEngine) {
       event.preventDefault();
+      const previousHitCount = this.primaryEngine.hits().length;
       this.primaryEngine.registerHit(primaryTarget);
+      if (this.primaryEngine.hits().length > previousHitCount) {
+        this.publishIntegrationSnapshot(this.primaryEngine);
+      }
       return;
     }
 
     const secondaryTarget = WASD_KEY_MAP[event.key];
     if (secondaryTarget !== undefined && this.secondaryEngine) {
       event.preventDefault();
+      const previousHitCount = this.secondaryEngine.hits().length;
       this.secondaryEngine.registerHit(secondaryTarget);
+      if (this.secondaryEngine.hits().length > previousHitCount) {
+        this.publishIntegrationSnapshot(this.secondaryEngine);
+      }
     }
   }
 
+  onRunEnded(engine: MazeRunEngine): void {
+    this.publishIntegrationSnapshot(engine);
+  }
+
   private startEngines(): void {
+    const assignments = this.usersState() === 'success' ? this.boardAssignments() : null;
+    const runId = uuidv4();
+    const startedAtMs = Date.now();
+
     this.primaryEngine?.start();
     this.secondaryEngine?.start();
+
+    this.runContexts.clear();
+    this.integrationSyncError.set('');
+    if (assignments && this.primaryEngine) {
+      this.runContexts.set(this.primaryEngine, {
+        primaryKey: uuidv4(),
+        runId,
+        startedAtMs,
+        ...assignments[0],
+      });
+      if (this.secondaryEngine && assignments[1]) {
+        this.runContexts.set(this.secondaryEngine, {
+          primaryKey: uuidv4(),
+          runId,
+          startedAtMs,
+          ...assignments[1],
+        });
+      }
+    }
+
+    if (this.primaryEngine) this.publishIntegrationSnapshot(this.primaryEngine);
+    if (this.secondaryEngine) this.publishIntegrationSnapshot(this.secondaryEngine);
   }
 
   private async loadOrganizationUsers(): Promise<void> {
@@ -302,6 +360,67 @@ export class App {
 
   private membershipKey(teamId: number, userId: number): string {
     return `${teamId}:${userId}`;
+  }
+
+  private publishIntegrationSnapshot(engine: MazeRunEngine): void {
+    const context = this.runContexts.get(engine);
+    if (!context) return;
+
+    const data = this.integrationData(engine, context);
+    const previousRequest = this.integrationQueues.get(engine) ?? Promise.resolve();
+    const request = previousRequest
+      .catch(() => undefined)
+      .then(() => this.intraManagerApi.postIntegrationData(data))
+      .catch(() => {
+        this.integrationSyncError.set('Run data could not be sent to Board.');
+      });
+    this.integrationQueues.set(engine, request);
+  }
+
+  private integrationData(
+    engine: MazeRunEngine,
+    context: RunIntegrationContext,
+  ): MazeRunIntegrationSnapshot {
+    const hits = engine.hits();
+    const completed = engine.status() === 'finished';
+    const accumulatedTimes = this.accumulatedTimes(hits);
+    const totalTime = completed ? Math.round(engine.totalMs() ?? 0) : undefined;
+
+    return {
+      PrimaryKey: context.primaryKey,
+      RunId: context.runId,
+      UserId: context.user.user_id,
+      TeamId: context.team.team_id,
+      TeamName: context.team.name,
+      StartedAt: new Date(context.startedAtMs).toISOString(),
+      ...(completed && totalTime !== undefined
+        ? {
+            FinishedAt: new Date(context.startedAtMs + totalTime).toISOString(),
+            TotalTime: totalTime,
+          }
+        : {}),
+      Progress: (hits.length * 25) as MazeRunIntegrationSnapshot['Progress'],
+      CheckpointsReached: hits.length,
+      ...(accumulatedTimes[0] !== undefined ? { Waypoint1Time: accumulatedTimes[0] } : {}),
+      ...(accumulatedTimes[1] !== undefined ? { Waypoint2Time: accumulatedTimes[1] } : {}),
+      ...(accumulatedTimes[2] !== undefined ? { Waypoint3Time: accumulatedTimes[2] } : {}),
+      ...(accumulatedTimes[3] !== undefined ? { Waypoint4Time: accumulatedTimes[3] } : {}),
+      ...(hits.length > 0
+        ? { WaypointOrder: hits.map(({ targetId }) => targetId + 1).join('-') }
+        : {}),
+      ...(hits[1] ? { Checkpoint1Time: Math.round(hits[1].splitMs) } : {}),
+      ...(hits[2] ? { Checkpoint2Time: Math.round(hits[2].splitMs) } : {}),
+      ...(hits[3] ? { Checkpoint3Time: Math.round(hits[3].splitMs) } : {}),
+      Completed: completed,
+    };
+  }
+
+  private accumulatedTimes(hits: TargetHit[]): number[] {
+    let elapsed = 0;
+    return hits.map(({ splitMs }) => {
+      elapsed += splitMs;
+      return Math.round(elapsed);
+    });
   }
 
   private clearCountdownTimer(): void {

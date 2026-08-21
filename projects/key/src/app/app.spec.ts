@@ -153,6 +153,7 @@ describe('App', () => {
       users: [{ image: null, name: 'Grace Hopper', user_id: 43 }],
     };
     vi.spyOn(intraManagerApi, 'getRobotTeams').mockResolvedValue([arrowsTeam, wasdTeam]);
+    vi.spyOn(intraManagerApi, 'postIntegrationData').mockResolvedValue();
 
     app.onConfigured({
       config: { mode: 'any-order' },
@@ -260,5 +261,122 @@ describe('App', () => {
     await starting;
 
     expect(app.phase()).toBe('run');
+  });
+
+  it('posts complete run snapshots with stable run identifiers and accumulated timing', async () => {
+    const intraManagerApi = TestBed.inject(IntraManagerApi);
+    const controller = {
+      active: true,
+      display_name: 'Ada Lovelace',
+      email: 'ada@example.com',
+      first_name: 'Ada',
+      last_name: 'Lovelace',
+      user_id: 42,
+    };
+    const team = {
+      ...blueBotTeam,
+      users: [{ image: null, name: 'Ada Lovelace', user_id: 42 }],
+    };
+    vi.spyOn(intraManagerApi, 'isBoardIntegrationUnlocked').mockReturnValue(true);
+    vi.spyOn(intraManagerApi, 'getOrganizationUsers').mockResolvedValue([controller]);
+    vi.spyOn(intraManagerApi, 'getRobotTeams').mockResolvedValue([team]);
+    const postData = vi.spyOn(intraManagerApi, 'postIntegrationData').mockResolvedValue();
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.onConfigured({
+      config: { mode: 'any-order' },
+      dualMaze: false,
+      countdownSeconds: 0,
+      labels: { '0': 'A', '1': 'B', '2': 'C', '3': 'D' },
+    });
+    await fixture.whenStable();
+    app.primaryController.set(controller);
+    app.primaryTeam.set(team);
+
+    await app.beginCountdown();
+    await vi.waitFor(() => expect(postData).toHaveBeenCalledTimes(1));
+    const initialData = postData.mock.calls[0][0];
+    expect(initialData).toEqual(
+      expect.objectContaining({
+        UserId: 42,
+        TeamId: 3,
+        TeamName: 'BlueBot',
+        Progress: 0,
+        CheckpointsReached: 0,
+        Completed: false,
+      }),
+    );
+    expect(initialData).not.toHaveProperty('FinishedAt');
+    expect(initialData).not.toHaveProperty('TotalTime');
+
+    for (const key of ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft']) {
+      app.onKeydown({ key, target: null, preventDefault: vi.fn() } as unknown as KeyboardEvent);
+    }
+    await vi.waitFor(() => expect(postData).toHaveBeenCalledTimes(5));
+
+    const finalData = postData.mock.calls[4][0];
+    expect(finalData).toEqual(
+      expect.objectContaining({
+        PrimaryKey: initialData.PrimaryKey,
+        RunId: initialData.RunId,
+        UserId: 42,
+        TeamId: 3,
+        Progress: 100,
+        CheckpointsReached: 4,
+        WaypointOrder: '1-2-3-4',
+        Completed: true,
+        FinishedAt: expect.any(String),
+        TotalTime: expect.any(Number),
+        Waypoint1Time: expect.any(Number),
+        Waypoint2Time: expect.any(Number),
+        Waypoint3Time: expect.any(Number),
+        Waypoint4Time: expect.any(Number),
+        Checkpoint1Time: expect.any(Number),
+        Checkpoint2Time: expect.any(Number),
+        Checkpoint3Time: expect.any(Number),
+      }),
+    );
+  });
+
+  it('does not mark a given-up run as finished or completed', async () => {
+    const intraManagerApi = TestBed.inject(IntraManagerApi);
+    const controller = {
+      active: true,
+      display_name: 'Ada Lovelace',
+      email: null,
+      first_name: 'Ada',
+      last_name: 'Lovelace',
+      user_id: 42,
+    };
+    const team = {
+      ...blueBotTeam,
+      users: [{ image: null, name: 'Ada Lovelace', user_id: 42 }],
+    };
+    vi.spyOn(intraManagerApi, 'isBoardIntegrationUnlocked').mockReturnValue(true);
+    vi.spyOn(intraManagerApi, 'getOrganizationUsers').mockResolvedValue([controller]);
+    vi.spyOn(intraManagerApi, 'getRobotTeams').mockResolvedValue([team]);
+    const postData = vi.spyOn(intraManagerApi, 'postIntegrationData').mockResolvedValue();
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.onConfigured({
+      config: { mode: 'any-order' },
+      dualMaze: false,
+      countdownSeconds: 0,
+      labels: { '0': 'A', '1': 'B', '2': 'C', '3': 'D' },
+    });
+    await fixture.whenStable();
+    app.primaryController.set(controller);
+    app.primaryTeam.set(team);
+    await app.beginCountdown();
+    await vi.waitFor(() => expect(postData).toHaveBeenCalledTimes(1));
+
+    app.primaryEngine?.giveUp();
+    if (app.primaryEngine) app.onRunEnded(app.primaryEngine);
+    await vi.waitFor(() => expect(postData).toHaveBeenCalledTimes(2));
+
+    const abandonedData = postData.mock.calls[1][0];
+    expect(abandonedData.Completed).toBe(false);
+    expect(abandonedData).not.toHaveProperty('FinishedAt');
+    expect(abandonedData).not.toHaveProperty('TotalTime');
   });
 });

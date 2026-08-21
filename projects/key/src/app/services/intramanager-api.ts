@@ -56,6 +56,31 @@ export interface OrganizationTeam {
   users: TeamUser[];
 }
 
+export interface MazeRunIntegrationData {
+  PrimaryKey: string;
+  RunId: string;
+  UserId: number;
+  TeamId: number;
+  TeamName: string;
+  StartedAt: string;
+  UpdatedAt: string;
+  FinishedAt?: string;
+  Progress: 0 | 25 | 50 | 75 | 100;
+  CheckpointsReached: number;
+  Waypoint1Time?: number;
+  Waypoint2Time?: number;
+  Waypoint3Time?: number;
+  Waypoint4Time?: number;
+  WaypointOrder?: string;
+  Checkpoint1Time?: number;
+  Checkpoint2Time?: number;
+  Checkpoint3Time?: number;
+  TotalTime?: number;
+  Completed: boolean;
+}
+
+export type MazeRunIntegrationSnapshot = Omit<MazeRunIntegrationData, 'UpdatedAt'>;
+
 @Injectable({
   providedIn: 'root',
 })
@@ -156,6 +181,21 @@ export class IntraManagerApi {
       this.http.put<unknown>(
         `https://board-api.intramanager.com/v1/teams/${teamId}/users/${userId}`,
         null,
+        { headers: this.unlockedHeaders() },
+      ),
+    );
+  }
+
+  async postIntegrationData(data: MazeRunIntegrationSnapshot): Promise<void> {
+    const integrationId = this.storedIntegrationId();
+    if (integrationId === null) {
+      throw new Error('A Board integration must be selected before run data can be sent.');
+    }
+
+    await firstValueFrom(
+      this.http.post<unknown>(
+        `https://board-data-server.intramanager.com/v1/integrations/${integrationId}/data`,
+        { ...data, UpdatedAt: new Date().toISOString() },
         { headers: this.unlockedHeaders() },
       ),
     );

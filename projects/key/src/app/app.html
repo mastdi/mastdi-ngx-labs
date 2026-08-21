@@ -146,6 +146,7 @@
                 [engine]="primaryEngine"
                 [targetLabels]="targetLabels()"
                 [label]="primaryRunLabel()"
+                (runEnded)="onRunEnded(primaryEngine)"
               />
             }
             @if (secondaryEngine) {
@@ -153,6 +154,7 @@
                 [engine]="secondaryEngine"
                 [targetLabels]="targetLabels()"
                 [label]="secondaryRunLabel()"
+                (runEnded)="onRunEnded(secondaryEngine)"
               />
             }
           </div>
@@ -161,6 +163,9 @@
               <button mat-flat-button color="primary" (click)="runAgain()">Run again</button>
               <button mat-button (click)="resetToConfig()">Change setup</button>
             </div>
+          }
+          @if (integrationSyncError()) {
+            <p class="error" role="alert">{{ integrationSyncError() }}</p>
           }
         }
       </div>
