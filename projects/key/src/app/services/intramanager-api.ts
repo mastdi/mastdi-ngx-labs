@@ -4,9 +4,24 @@ import { firstValueFrom } from 'rxjs';
 import { SecureStorage, UserConfig } from 'shared-core';
 
 interface StoredApiHeader {
-  // TODO: Change to x-api-key once it is fixed in the backend
   key: 'token';
   value: string;
+}
+
+interface IntegrationsResponse {
+  integrations: IntegrationResponseItem[];
+}
+
+interface IntegrationResponseItem {
+  active: boolean;
+  integration_id: number | null;
+  title: string | null;
+  type: string | null;
+}
+
+export interface IntegrationOption {
+  integration_id: number;
+  title: string;
 }
 
 @Injectable({
@@ -23,14 +38,14 @@ export class IntraManagerApi {
     return this.userConfig.isConfigSet();
   }
 
-  async testAndStoreApiKey(apiKey: string, masterPassword: string): Promise<void> {
+  async testAndStoreApiKey(apiKey: string, masterPassword: string): Promise<IntegrationOption[]> {
     const header: StoredApiHeader = {
       key: 'token',
       value: apiKey.trim(),
     };
 
-    await firstValueFrom(
-      this.http.get<unknown>(IntraManagerApi.integrationsUrl, {
+    const response = await firstValueFrom(
+      this.http.get<IntegrationsResponse>(IntraManagerApi.integrationsUrl, {
         headers: new HttpHeaders({ [header.key]: header.value }),
       }),
     );
@@ -42,5 +57,24 @@ export class IntraManagerApi {
 
     this.userConfig.url = IntraManagerApi.integrationsUrl;
     this.userConfig.header = encryptedHeader;
+
+    return response.integrations
+      .filter(
+        (
+          integration,
+        ): integration is IntegrationResponseItem & {
+          integration_id: number;
+          title: string;
+        } =>
+          integration.active &&
+          integration.type === 'api' &&
+          Number.isInteger(integration.integration_id) &&
+          typeof integration.title === 'string',
+      )
+      .map(({ integration_id, title }) => ({ integration_id, title }));
+  }
+
+  storeIntegrationId(integrationId: number): void {
+    this.userConfig.integrationId = integrationId;
   }
 }

@@ -12,6 +12,7 @@ export class UserConfig {
   private readonly prefix = inject(USER_CONFIG_PREFIX);
   private readonly URL_KEY = this.prefix + 'URL';
   private readonly HEADER_KEY = this.prefix + 'HEADER';
+  private readonly INTEGRATION_ID_KEY = this.prefix + 'INTEGRATION_ID';
 
   get url(): string {
     const url = localStorage.getItem(this.URL_KEY);
@@ -37,6 +38,18 @@ export class UserConfig {
     localStorage.setItem(this.HEADER_KEY, value);
   }
 
+  get integrationId(): number | null {
+    const value = localStorage.getItem(this.INTEGRATION_ID_KEY);
+    if (value === null) return null;
+
+    const integrationId = Number(value);
+    return Number.isInteger(integrationId) ? integrationId : null;
+  }
+
+  set integrationId(value: number) {
+    localStorage.setItem(this.INTEGRATION_ID_KEY, String(value));
+  }
+
   isConfigSet(): boolean {
     try {
       /* eslint-disable @typescript-eslint/no-unused-expressions */
@@ -52,5 +65,6 @@ export class UserConfig {
   clear(): void {
     localStorage.removeItem(this.URL_KEY);
     localStorage.removeItem(this.HEADER_KEY);
+    localStorage.removeItem(this.INTEGRATION_ID_KEY);
   }
 }

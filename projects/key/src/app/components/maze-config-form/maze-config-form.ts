@@ -24,7 +24,7 @@ import {
   type MazeMode,
   type TargetId,
 } from '../../engine/maze-run-engine';
-import { IntraManagerApi } from '../../services/intramanager-api';
+import { IntegrationOption, IntraManagerApi } from '../../services/intramanager-api';
 
 type ConnectionState = 'idle' | 'testing' | 'success' | 'error';
 
@@ -73,6 +73,7 @@ export class MazeConfigForm {
   readonly connectionState = signal<ConnectionState>('idle');
   readonly connectionError = signal('');
   readonly hasStoredApiKey = signal(this.intraManagerApi.hasStoredApiKey());
+  readonly integrations = signal<IntegrationOption[]>([]);
 
   constructor() {
     // Reacts to initialSetup itself (rather than a one-shot ngOnInit) so a value
@@ -148,6 +149,8 @@ export class MazeConfigForm {
     }),
   });
 
+  readonly integrationId = this.fb.control<number | null>(null, Validators.required);
+
   // Read labels back out with the same 'target' + id key convention used above.
   private readonly labelKey = (id: TargetId) => `target${id}` as const;
 
@@ -198,14 +201,20 @@ export class MazeConfigForm {
     this.connectionError.set('');
 
     try {
-      await this.intraManagerApi.testAndStoreApiKey(apiKey, masterPassword);
+      const integrations = await this.intraManagerApi.testAndStoreApiKey(apiKey, masterPassword);
       this.integrationForm.reset();
+      this.integrationId.reset();
+      this.integrations.set(integrations);
       this.hasStoredApiKey.set(true);
       this.connectionState.set('success');
     } catch (error: unknown) {
       this.connectionError.set(this.connectionErrorMessage(error));
       this.connectionState.set('error');
     }
+  }
+
+  storeIntegrationId(integrationId: number): void {
+    this.intraManagerApi.storeIntegrationId(integrationId);
   }
 
   submit(): void {

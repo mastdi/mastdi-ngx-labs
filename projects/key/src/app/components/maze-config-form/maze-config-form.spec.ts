@@ -72,7 +72,7 @@ describe('MazeConfigForm', () => {
     const intraManagerApi = TestBed.inject(IntraManagerApi);
     const testAndStore = vi
       .spyOn(intraManagerApi, 'testAndStoreApiKey')
-      .mockResolvedValue(undefined);
+      .mockResolvedValue([{ integration_id: 12, title: 'Active integration' }]);
     component.integrationForm.setValue({
       apiKey: 'board-key',
       masterPassword: 'master-password',
@@ -83,6 +83,16 @@ describe('MazeConfigForm', () => {
     expect(testAndStore).toHaveBeenCalledWith('board-key', 'master-password');
     expect(component.connectionState()).toBe('success');
     expect(component.hasStoredApiKey()).toBe(true);
+    expect(component.integrations()).toEqual([{ integration_id: 12, title: 'Active integration' }]);
     expect(component.integrationForm.getRawValue()).toEqual({ apiKey: '', masterPassword: '' });
+  });
+
+  it('stores the selected integration id', () => {
+    const intraManagerApi = TestBed.inject(IntraManagerApi);
+    const storeIntegrationId = vi.spyOn(intraManagerApi, 'storeIntegrationId');
+
+    component.storeIntegrationId(12);
+
+    expect(storeIntegrationId).toHaveBeenCalledWith(12);
   });
 });

@@ -136,6 +136,24 @@
               <p class="success" role="status">
                 Connection verified. The API key was saved securely.
               </p>
+              @if (integrations().length > 0) {
+                <mat-form-field appearance="outline">
+                  <mat-label>Integration</mat-label>
+                  <mat-select
+                    [formControl]="integrationId"
+                    (selectionChange)="storeIntegrationId($event.value)"
+                    required
+                  >
+                    @for (integration of integrations(); track integration.integration_id) {
+                      <mat-option [value]="integration.integration_id">
+                        {{ integration.title }}
+                      </mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              } @else {
+                <p role="status">No active integrations are available.</p>
+              }
             } @else if (connectionState() === 'error') {
               <p class="error" role="alert">{{ connectionError() }}</p>
             }
