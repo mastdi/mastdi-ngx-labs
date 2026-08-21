@@ -19,31 +19,26 @@
               @case ('success') {
                 @if (organizationUsers().length > 0) {
                   <div class="controller-selectors" [class.dual]="secondaryEngine">
-                    <mat-form-field appearance="outline">
-                      <mat-label>Arrows controller</mat-label>
-                      <mat-select
-                        class="controller-select"
-                        [value]="primaryController()"
-                        (selectionChange)="primaryController.set($event.value)"
-                      >
-                        @for (user of organizationUsers(); track user.user_id ?? $index) {
-                          <mat-option [value]="user">
-                            {{ organizationUserName(user) }}
-                            @if (user.email && user.email !== organizationUserName(user)) {
-                              — {{ user.email }}
-                            }
-                          </mat-option>
-                        }
-                      </mat-select>
-                    </mat-form-field>
-
-                    @if (secondaryEngine) {
+                    <div class="controller-assignment">
                       <mat-form-field appearance="outline">
-                        <mat-label>WASD controller</mat-label>
+                        <mat-label>Arrows team</mat-label>
+                        <mat-select
+                          class="team-select"
+                          [value]="primaryTeam()"
+                          (selectionChange)="primaryTeam.set($event.value)"
+                        >
+                          @for (team of robotTeams(); track team.team_id) {
+                            <mat-option [value]="team">{{ team.name }}</mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline">
+                        <mat-label>Arrows controller</mat-label>
                         <mat-select
                           class="controller-select"
-                          [value]="secondaryController()"
-                          (selectionChange)="secondaryController.set($event.value)"
+                          [value]="primaryController()"
+                          (selectionChange)="primaryController.set($event.value)"
                         >
                           @for (user of organizationUsers(); track user.user_id ?? $index) {
                             <mat-option [value]="user">
@@ -55,8 +50,46 @@
                           }
                         </mat-select>
                       </mat-form-field>
+                    </div>
+
+                    @if (secondaryEngine) {
+                      <div class="controller-assignment">
+                        <mat-form-field appearance="outline">
+                          <mat-label>WASD team</mat-label>
+                          <mat-select
+                            class="team-select"
+                            [value]="secondaryTeam()"
+                            (selectionChange)="secondaryTeam.set($event.value)"
+                          >
+                            @for (team of robotTeams(); track team.team_id) {
+                              <mat-option [value]="team">{{ team.name }}</mat-option>
+                            }
+                          </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline">
+                          <mat-label>WASD controller</mat-label>
+                          <mat-select
+                            class="controller-select"
+                            [value]="secondaryController()"
+                            (selectionChange)="secondaryController.set($event.value)"
+                          >
+                            @for (user of organizationUsers(); track user.user_id ?? $index) {
+                              <mat-option [value]="user">
+                                {{ organizationUserName(user) }}
+                                @if (user.email && user.email !== organizationUserName(user)) {
+                                  — {{ user.email }}
+                                }
+                              </mat-option>
+                            }
+                          </mat-select>
+                        </mat-form-field>
+                      </div>
                     }
                   </div>
+                  @if (robotTeams().length === 0) {
+                    <p class="error" role="alert">No teams were found under the Robots team.</p>
+                  }
                 } @else {
                   <p role="status">No Board users are available.</p>
                 }
@@ -88,7 +121,17 @@
             }
           </section>
         }
-        <button mat-flat-button color="primary" (click)="beginCountdown()">Start</button>
+        @if (startState() === 'error') {
+          <p class="error" role="alert">{{ startError() }}</p>
+        }
+        <button
+          mat-flat-button
+          color="primary"
+          [disabled]="startDisabled()"
+          (click)="beginCountdown()"
+        >
+          {{ startState() === 'adding-users' ? 'Adding controllers...' : 'Start' }}
+        </button>
         <button mat-button (click)="resetToConfig()">Back to setup</button>
       </div>
     }

@@ -190,6 +190,72 @@ describe('IntraManagerApi', () => {
     ]);
   });
 
+  it('returns nested teams from the first top-level Robots team', async () => {
+    userConfig.url = IntraManagerApi.integrationsUrl;
+    userConfig.header = 'encrypted-api-header';
+    userConfig.integrationId = 12;
+    const unlock = service.unlockStoredApiKey('master-password');
+    await Promise.resolve();
+    httpTesting.expectOne(IntraManagerApi.integrationsUrl).flush({ integrations: [] });
+    await unlock;
+
+    const result = service.getRobotTeams();
+    const request = httpTesting.expectOne(IntraManagerApi.robotTeamsUrl);
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.get('token')).toBe('stored-board-key');
+    request.flush({
+      teams: [
+        {
+          active: true,
+          children_nested: [],
+          name: 'Other',
+          team_id: 9,
+          users: [],
+        },
+        {
+          active: true,
+          children_nested: [
+            {
+              active: true,
+              children_nested: [],
+              name: 'BlueBot',
+              team_id: 3,
+              users: [{ image: null, name: 'David D', user_id: 18731 }],
+            },
+          ],
+          name: 'Robots',
+          team_id: 1,
+          users: [],
+        },
+      ],
+    });
+
+    await expect(result).resolves.toEqual([
+      expect.objectContaining({ name: 'BlueBot', team_id: 3 }),
+    ]);
+  });
+
+  it('adds a user to a team with the unlocked Board token', async () => {
+    userConfig.url = IntraManagerApi.integrationsUrl;
+    userConfig.header = 'encrypted-api-header';
+    userConfig.integrationId = 12;
+    const unlock = service.unlockStoredApiKey('master-password');
+    await Promise.resolve();
+    httpTesting.expectOne(IntraManagerApi.integrationsUrl).flush({ integrations: [] });
+    await unlock;
+
+    const result = service.addUserToTeam(3, 18731);
+    const request = httpTesting.expectOne(
+      'https://board-api.intramanager.com/v1/teams/3/users/18731',
+    );
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toBeNull();
+    expect(request.request.headers.get('token')).toBe('stored-board-key');
+    request.flush({});
+
+    await expect(result).resolves.toBeUndefined();
+  });
+
   it('resets all stored settings', () => {
     userConfig.url = IntraManagerApi.integrationsUrl;
     userConfig.header = 'encrypted-api-header';

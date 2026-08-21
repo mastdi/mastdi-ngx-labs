@@ -4,6 +4,14 @@ import { App } from './app';
 import { IntraManagerApi } from './services/intramanager-api';
 
 describe('App', () => {
+  const blueBotTeam = {
+    active: true,
+    children_nested: [],
+    name: 'BlueBot',
+    team_id: 3,
+    users: [] as Array<{ image: string | null; name: string; user_id: number }>,
+  };
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
@@ -56,6 +64,7 @@ describe('App', () => {
         user_id: 42,
       },
     ]);
+    vi.spyOn(intraManagerApi, 'getRobotTeams').mockResolvedValue([blueBotTeam]);
     const fixture = TestBed.createComponent(App);
 
     fixture.componentInstance.onConfigured({
@@ -69,7 +78,8 @@ describe('App', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelectorAll('.controller-select')).toHaveLength(1);
-    expect(compiled.querySelector('mat-label')?.textContent).toContain('Arrows controller');
+    expect(compiled.querySelectorAll('.team-select')).toHaveLength(1);
+    expect(compiled.textContent).toContain('Arrows controller');
   });
 
   it('shows a controller dropdown for each robot in a dual maze', async () => {
@@ -85,6 +95,7 @@ describe('App', () => {
         user_id: 42,
       },
     ]);
+    vi.spyOn(intraManagerApi, 'getRobotTeams').mockResolvedValue([blueBotTeam]);
     const fixture = TestBed.createComponent(App);
 
     fixture.componentInstance.onConfigured({
@@ -106,7 +117,7 @@ describe('App', () => {
     expect(
       (fixture.nativeElement as HTMLElement).querySelector('.controller-selectors.dual'),
     ).toBeTruthy();
-    expect(labels).toEqual(['Arrows controller', 'WASD controller']);
+    expect(labels).toEqual(['Arrows team', 'Arrows controller', 'WASD team', 'WASD controller']);
   });
 
   it('shows selected Board controller names in the run panel labels', async () => {
@@ -131,6 +142,17 @@ describe('App', () => {
       last_name: 'Hopper',
       user_id: 43,
     };
+    const arrowsTeam = {
+      ...blueBotTeam,
+      users: [{ image: null, name: 'Ada Lovelace', user_id: 42 }],
+    };
+    const wasdTeam = {
+      ...blueBotTeam,
+      name: 'mBot',
+      team_id: 2,
+      users: [{ image: null, name: 'Grace Hopper', user_id: 43 }],
+    };
+    vi.spyOn(intraManagerApi, 'getRobotTeams').mockResolvedValue([arrowsTeam, wasdTeam]);
 
     app.onConfigured({
       config: { mode: 'any-order' },
@@ -140,7 +162,10 @@ describe('App', () => {
     });
     app.primaryController.set(arrowsController);
     app.secondaryController.set(wasdController);
-    app.beginCountdown();
+    app.primaryTeam.set(arrowsTeam);
+    app.secondaryTeam.set(wasdTeam);
+    await fixture.whenStable();
+    await app.beginCountdown();
     fixture.detectChanges();
 
     const titles = Array.from(
@@ -195,5 +220,45 @@ describe('App', () => {
     expect(app.organizationUserName(createdUser)).toBe('New player');
     expect(app.newUserName.value).toBe('');
     expect(app.createUserState()).toBe('success');
+  });
+
+  it('adds a missing controller to the selected team before starting', async () => {
+    const intraManagerApi = TestBed.inject(IntraManagerApi);
+    const controller = {
+      active: true,
+      display_name: 'Ada Lovelace',
+      email: 'ada@example.com',
+      first_name: 'Ada',
+      last_name: 'Lovelace',
+      user_id: 42,
+    };
+    vi.spyOn(intraManagerApi, 'isBoardIntegrationUnlocked').mockReturnValue(true);
+    vi.spyOn(intraManagerApi, 'getOrganizationUsers').mockResolvedValue([controller]);
+    vi.spyOn(intraManagerApi, 'getRobotTeams').mockResolvedValue([blueBotTeam]);
+    let finishAdding: (() => void) | undefined;
+    const addUser = vi.spyOn(intraManagerApi, 'addUserToTeam').mockReturnValue(
+      new Promise<void>((resolve) => {
+        finishAdding = resolve;
+      }),
+    );
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.onConfigured({
+      config: { mode: 'any-order' },
+      dualMaze: false,
+      countdownSeconds: 0,
+      labels: { '0': 'A', '1': 'B', '2': 'C', '3': 'D' },
+    });
+    await fixture.whenStable();
+    app.primaryController.set(controller);
+    app.primaryTeam.set(blueBotTeam);
+
+    const starting = app.beginCountdown();
+    expect(addUser).toHaveBeenCalledWith(3, 42);
+    expect(app.phase()).toBe('ready');
+    finishAdding?.();
+    await starting;
+
+    expect(app.phase()).toBe('run');
   });
 });

@@ -23,6 +23,10 @@ interface OrganizationUsersResponse {
   users: OrganizationUser[];
 }
 
+interface TeamsResponse {
+  teams: OrganizationTeam[];
+}
+
 export interface IntegrationOption {
   integration_id: number;
   title: string;
@@ -38,6 +42,20 @@ export interface OrganizationUser {
   user_id: number | null;
 }
 
+export interface TeamUser {
+  image: string | null;
+  name: string;
+  user_id: number;
+}
+
+export interface OrganizationTeam {
+  active: boolean;
+  children_nested: OrganizationTeam[];
+  name: string;
+  team_id: number;
+  users: TeamUser[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -45,6 +63,8 @@ export class IntraManagerApi {
   static readonly integrationsUrl = 'https://board-api.intramanager.com/v1/integrations';
   static readonly organizationUsersUrl =
     'https://board-api.intramanager.com/v1/organizations/users';
+  static readonly robotTeamsUrl =
+    'https://board-api.intramanager.com/v1/teams?active=true&include_users=true&nested=true';
 
   private readonly http = inject(HttpClient);
   private readonly secureStorage = inject(SecureStorage);
@@ -119,6 +139,26 @@ export class IntraManagerApi {
     );
 
     return this.getOrganizationUsers();
+  }
+
+  async getRobotTeams(): Promise<OrganizationTeam[]> {
+    const response = await firstValueFrom(
+      this.http.get<TeamsResponse>(IntraManagerApi.robotTeamsUrl, {
+        headers: this.unlockedHeaders(),
+      }),
+    );
+
+    return response.teams.find(({ name }) => name === 'Robots')?.children_nested ?? [];
+  }
+
+  async addUserToTeam(teamId: number, userId: number): Promise<void> {
+    await firstValueFrom(
+      this.http.put<unknown>(
+        `https://board-api.intramanager.com/v1/teams/${teamId}/users/${userId}`,
+        null,
+        { headers: this.unlockedHeaders() },
+      ),
+    );
   }
 
   storedIntegrationId(): number | null {
